@@ -11,6 +11,7 @@
 - An Anchor-lang like framework with all the features to support an escrow program including:
 
   - Basic Solana DS and API exposed to Goscript, like PubKey, AccountInfo, token::TokenAccount, token::SetAuthority, etc.
+  - All commonly used features like spl-token operations, PDA creation, CPIs, etc.
   - Automatic serialize and deserialize Account data
   - Automatic serialize and deserialize args of processors
   - Automatic account attributes checks.

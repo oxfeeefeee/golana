@@ -13,13 +13,13 @@ test-sbf = []
 solana-program = "1.11.6"
 
 [dependencies.goscript-engine] 
-path = "../goscript/engine"
+path = "../../goscript/engine"
 default-features = false
 features = ["read_map"]
 version = "0.1.0" 
 
 [dependencies.goscript-vm] 
-path = "../goscript/vm"
+path = "../../goscript/vm"
 version = "0.1.0"
 
 [dev-dependencies]

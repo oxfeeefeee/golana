@@ -6,16 +6,22 @@ publish = false
 
 
 [features]
+default = ["custom-heap"]
+custom-heap = []
 no-entrypoint = []
 test-sbf = []
 
 [dependencies]
 solana-program = "1.11.6"
 
+[dependencies.smalloc] 
+path = "../../smalloc"
+version = "0.1.0"
+
 [dependencies.goscript-engine] 
 path = "../../goscript/engine"
 default-features = false
-features = ["read_map"]
+features = ["read_map", "btree_map"]
 version = "0.1.0" 
 
 [dependencies.goscript-vm] 

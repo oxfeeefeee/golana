@@ -1,0 +1,6 @@
+[project]
+name = "escrow"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/wuhao/.config/solana/id.json"

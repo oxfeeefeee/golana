@@ -113,9 +113,10 @@ describe("loader", async () => {
 
 
     it("Execute", async () => {
-        await program.methods.golExecute().accounts({
+        await program.methods.golExecute(Buffer.from('My name is Paul')).accounts({
             authority: author.publicKey,
             bytecode: bytecodePK,
+            extra: bytecodePK,
         }).preInstructions(
             [
                 ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),

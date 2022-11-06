@@ -44,14 +44,15 @@ pub mod loader {
         Ok(())
     }
 
-    pub fn gol_execute(ctx: Context<GolExecute>) -> Result<()> {
-        crate::goscript::run(&ctx.accounts.bytecode.content);
+    pub fn gol_execute(ctx: Context<GolExecute>, args: Vec<u8>) -> Result<()> {
+        msg!(&ctx.remaining_accounts.len().to_string());
+        crate::goscript::run(&ctx.accounts.bytecode.content, ctx.remaining_accounts, args);
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-#[instruction(id: String)]
+#[instruction(handle: String)]
 pub struct GolInitialize<'info> {
     pub authority: Signer<'info>,
     #[account(zero)]
@@ -74,6 +75,7 @@ pub struct GolFinalize<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(args: Vec<u8>)]
 pub struct GolExecute<'info> {
     pub authority: Signer<'info>,
     #[account(has_one = authority)]

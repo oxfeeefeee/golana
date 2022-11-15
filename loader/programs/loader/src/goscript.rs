@@ -6,8 +6,8 @@ use solana_program::account_info::AccountInfo;
 use std::any::Any;
 
 pub fn run(bin: &Vec<u8>, accounts: &[AccountInfo], args: Vec<u8>) {
-    let bc = goscript_vm::Bytecode::try_from_slice(&bin).unwrap();
-    let data = UserData::new(accounts, args);
+    let bc = Bytecode::try_from_slice(&bin).unwrap();
+    let data = UserData::new(&bc, accounts, args);
 
     let mut ffi = goscript_vm::FfiFactory::with_user_data(&data);
     fmt2::Fmt2Ffi::register(&mut ffi);
@@ -20,7 +20,7 @@ pub(crate) struct UserData {
 }
 
 impl UserData {
-    fn new(accounts: &[AccountInfo], args: Vec<u8>) -> UserData {
+    fn new(bc: &Bytecode, accounts: &[AccountInfo], args: Vec<u8>) -> UserData {
         UserData {
             gos_ix: deserialize_ix(accounts, args),
         }

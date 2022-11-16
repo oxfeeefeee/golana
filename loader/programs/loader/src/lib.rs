@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use golana::*;
+use goscript_vm::Bytecode;
 
 declare_id!("55oqciWs2A8NRof7jSTrhi6HNpRhKWCMuYcEczGzkVy6");
 
@@ -40,13 +42,21 @@ pub mod loader {
     }
 
     pub fn gol_finalize(ctx: Context<GolFinalize>) -> Result<()> {
+        let bc = Bytecode::try_from_slice(&ctx.accounts.bytecode.content).unwrap();
+        let meta = golana::check(&bc)?;
+        ctx.accounts.bytecode.meta = meta.try_to_vec().unwrap();
         ctx.accounts.bytecode.finalized = true;
         Ok(())
     }
 
     pub fn gol_execute(ctx: Context<GolExecute>, args: Vec<u8>) -> Result<()> {
         msg!(&ctx.remaining_accounts.len().to_string());
-        crate::goscript::run(&ctx.accounts.bytecode.content, ctx.remaining_accounts, args);
+        crate::goscript::run(
+            &ctx.accounts.bytecode.content,
+            &ctx.accounts.bytecode.meta,
+            ctx.remaining_accounts,
+            args,
+        );
         Ok(())
     }
 }
@@ -87,11 +97,6 @@ pub struct GolBytecode {
     pub handle: String,
     pub authority: Pubkey,
     pub finalized: bool,
+    pub meta: Vec<u8>,
     pub content: Vec<u8>,
-}
-
-#[error_code]
-pub enum GolError {
-    #[msg("Handle doesn't match against the public key")]
-    WrongHandle,
 }

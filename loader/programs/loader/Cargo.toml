@@ -29,3 +29,7 @@ version = "0.1.0"
 [dependencies.smalloc] 
 path = "../../../../smalloc"
 version = "0.1.0"
+
+[dependencies.golana] 
+path = "../../../golana"
+version = "0.1.0"

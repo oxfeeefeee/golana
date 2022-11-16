@@ -571,6 +571,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "golana"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "borsh",
+ "goscript-vm",
+ "solana-program",
+]
+
+[[package]]
 name = "goscript-parser"
 version = "0.1.0"
 
@@ -753,6 +763,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "borsh",
+ "golana",
  "goscript-vm",
  "smalloc",
  "solana-program",

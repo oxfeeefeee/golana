@@ -1,3 +1,6 @@
-pub mod checker;
+mod checker;
 
-pub mod errors;
+mod errors;
+
+pub use checker::*;
+pub use errors::*;

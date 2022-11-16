@@ -104,7 +104,8 @@ describe("loader", async () => {
             bytecode: bytecodePK,
         }).preInstructions(
             [
-                ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 })]
+                ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
         ).signers([author]).rpc({ skipPreflight: true });
 
         let bcAccount = await program.account.golBytecode.fetch(bytecodePK);

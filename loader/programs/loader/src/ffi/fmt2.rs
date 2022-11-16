@@ -1,4 +1,4 @@
-use goscript_vm::value::*;
+use goscript_vm::types::*;
 use goscript_vm::*;
 use solana_program::msg;
 

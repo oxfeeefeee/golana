@@ -5,10 +5,6 @@ type PublicKey [32]uint8
 type AccountInfo struct {
 	/// Public key of the account
 	Key PublicKey
-	/// Was the transaction signed by this account's public key?
-	IsSigner bool
-	/// Is the account writable?
-	IsWritable bool
 	/// The lamports in the account.  Modifiable by programs.
 	Lamports *uint64
 	/// Program that owns this account
@@ -18,6 +14,8 @@ type AccountInfo struct {
 	/// The epoch at which this account will next owe rent
 	RentEpoch uint64
 }
+
+type SignerInfo AccountInfo
 
 var nativeSolana ffiSolana
 

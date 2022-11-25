@@ -1,19 +1,15 @@
-use crate::goscript::UserData;
+use crate::goscript::Instruction;
 use goscript_vm::types::*;
 use goscript_vm::*;
 
 #[derive(Ffi)]
-pub struct Solana;
+pub struct SolanaFfi;
 
 #[ffi_impl]
-impl Solana {
+impl SolanaFfi {
     fn ffi_get_ix(ctx: &mut FfiCtx) -> RuntimeResult<GosValue> {
-        Ok(ctx
-            .user_data
-            .unwrap()
-            .as_any()
-            .downcast_ref::<UserData>()
-            .unwrap()
-            .get_ix())
+        let ud = ctx.user_data.unwrap();
+        let p = ud as *const Instruction;
+        Ok(unsafe { p.as_ref() }.unwrap().get_ix(ctx))
     }
 }

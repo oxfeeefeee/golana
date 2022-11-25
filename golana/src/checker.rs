@@ -3,32 +3,74 @@ use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 use goscript_vm::*;
 
+#[derive(BorshDeserialize, BorshSerialize, Debug, Clone, PartialEq, Eq)]
+pub enum AccessMode {
+    None,
+    Initialize,
+    ReadOnly,
+    Mutable,
+}
+
+impl AccessMode {
+    pub fn try_with_name(name: &str) -> Option<AccessMode> {
+        match name {
+            "Data" => Some(Self::ReadOnly),
+            "DataInit" => Some(Self::Initialize),
+            "DataMut" => Some(Self::Mutable),
+            _ => None,
+        }
+    }
+}
+
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct AccountMeta {
     pub is_signer: bool,
-    pub is_writable: bool,
-    pub data: Option<types::Meta>,
+    pub access_mode: AccessMode,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct IxMeta {
     pub name: String,
+    pub gos_meta: types::Meta,
+    pub process_method: types::FunctionKey,
+    pub process_method_index: usize,
     pub accounts: Vec<AccountMeta>,
+    pub accounts_data: Vec<(usize, types::Meta)>,
     pub args: Vec<types::Meta>,
 }
 
 impl IxMeta {
-    fn new(name: &str, fields: &[types::FieldInfo], account: &types::Meta) -> Result<IxMeta> {
+    fn new(
+        name: &str,
+        gos_meta: types::Meta,
+        account: &types::Meta,
+        signer: &types::Meta,
+        metas: &types::MetadataObjs,
+    ) -> Result<IxMeta> {
+        let (methods, inner_meta) = metas[gos_meta.key].as_named();
+        let process_method_index = methods
+            .mapping
+            .iter()
+            .find_map(|(name, index)| (name == "Process").then_some(*index as usize))
+            .ok_or(error!(GolError::MethodNotFound))?;
+        let method_desc = (&*methods.members[process_method_index]).borrow();
+        let process_method = method_desc
+            .pointer_recv
+            .then_some(method_desc.func.unwrap())
+            .ok_or(error!(GolError::NonPointerReceiver))?;
+
+        // Now build struct fields
+        let fields = metas[inner_meta.key].as_struct().infos();
         let mut i = 0;
         let mut accounts: Vec<(AccountMeta, &str)> = vec![];
         // First, get all AccountInfo
         while i < fields.len() {
-            if &fields[i].meta == account {
+            let meta = &fields[i].meta;
+            if meta == account || meta == signer {
                 accounts.push((
                     AccountMeta {
-                        is_signer: false,
-                        is_writable: false,
-                        data: None,
+                        is_signer: meta == signer,
+                        access_mode: AccessMode::None,
                     },
                     &fields[i].name,
                 ));
@@ -39,23 +81,28 @@ impl IxMeta {
         }
 
         // Then, the data declarations
+        let mut accounts_data = vec![];
         while i < fields.len() {
             let field = &fields[i];
-            if field.meta.ptr_depth == 1 && field.name.ends_with("Data") {
+            if field.meta.ptr_depth == 1 {
                 let mut found = false;
-                for acc in accounts.iter_mut() {
-                    if field.name.len() == acc.1.len() + "Data".len()
-                        && field.name.starts_with(acc.1)
-                    {
-                        acc.0.data = Some(field.meta);
-                        found = true;
+                for (index, acc) in accounts.iter_mut().enumerate() {
+                    if field.name.starts_with(acc.1) {
+                        let mode_name = &field.name[acc.1.len()..];
+                        if let Some(mode) = AccessMode::try_with_name(mode_name) {
+                            if acc.0.access_mode != AccessMode::None {
+                                return Err(error!(GolError::DuplicatedDataDeclare));
+                            }
+                            acc.0.access_mode = mode;
+                            accounts_data.push((index, field.meta));
+                            found = true;
+                        }
                         break;
                     }
                 }
                 if !found {
-                    return Err(error!(GolError::WrongDataDeclare));
+                    return Err(error!(GolError::BadDataDeclare));
                 }
-
                 i += 1;
             } else {
                 break;
@@ -76,17 +123,26 @@ impl IxMeta {
 
         Ok(IxMeta {
             name: name.to_owned(),
+            gos_meta,
+            process_method,
+            process_method_index,
             accounts: accounts.into_iter().map(|(acc, _)| acc).collect(),
+            accounts_data,
             args,
         })
     }
 }
 
-pub fn check(bc: &Bytecode) -> Result<Vec<IxMeta>> {
-    let account_info_meta = get_account_info_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
+#[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
+pub struct TxMeta {
+    pub instructions: Vec<IxMeta>,
+}
 
+pub fn check(bc: &Bytecode) -> Result<TxMeta> {
+    let (account_info_meta, signer_info_meta) =
+        get_account_info_metas(bc).ok_or(error!(GolError::MetaNotFound))?;
     let main_pkg = &bc.objects.packages[bc.main_pkg];
-    let infos: Vec<(&String, &[types::FieldInfo])> = main_pkg
+    let ix_details: Vec<(&String, types::Meta)> = main_pkg
         .member_indices()
         .iter()
         .filter_map(|(name, index)| {
@@ -94,22 +150,27 @@ pub fn check(bc: &Bytecode) -> Result<Vec<IxMeta>> {
                 .then(|| {
                     let member = main_pkg.member(*index);
                     let gmeta = member.as_metadata();
-                    match &bc.objects.metas[gmeta.key].unwrap_named(&bc.objects.metas) {
-                        types::MetadataType::Struct(f) => Some((name, f.infos())),
-                        _ => None,
-                    }
+                    (name, gmeta.clone())
                 })
-                .flatten()
         })
         .collect();
 
-    infos
+    let instructions = ix_details
         .into_iter()
-        .map(|(name, fields)| IxMeta::new(name, fields, &account_info_meta))
-        .collect()
+        .map(|(name, meta)| {
+            IxMeta::new(
+                name,
+                meta,
+                &account_info_meta,
+                &signer_info_meta,
+                &bc.objects.metas,
+            )
+        })
+        .collect::<Result<Vec<IxMeta>>>()?;
+    Ok(TxMeta { instructions })
 }
 
-fn get_account_info_meta(bc: &Bytecode) -> Option<types::Meta> {
+fn get_account_info_metas(bc: &Bytecode) -> Option<(types::Meta, types::Meta)> {
     let key = bc
         .objects
         .packages
@@ -118,9 +179,12 @@ fn get_account_info_meta(bc: &Bytecode) -> Option<types::Meta> {
         .find(|(_, pkg)| pkg.name() == "solana")
         .map(|(i, _)| i.into())?;
     let pkg = &bc.objects.packages[key];
-    let member = pkg.member(*pkg.member_index("AccountInfo")?);
-    match member.typ() {
-        types::ValueType::Metadata => Some(member.as_metadata().clone()),
+    let account = pkg.member(*pkg.member_index("AccountInfo")?);
+    let signer = pkg.member(*pkg.member_index("SignerInfo")?);
+    match (account.typ(), signer.typ()) {
+        (types::ValueType::Metadata, types::ValueType::Metadata) => {
+            Some((account.as_metadata().clone(), signer.as_metadata().clone()))
+        }
         _ => None,
     }
 }

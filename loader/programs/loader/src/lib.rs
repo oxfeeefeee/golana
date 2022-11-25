@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use golana::*;
 use goscript_vm::Bytecode;
 
-declare_id!("55oqciWs2A8NRof7jSTrhi6HNpRhKWCMuYcEczGzkVy6");
+declare_id!("GDfgxSRyoQYdNN7vTJRr82N6Jqg11v6oTwYTjguZ7yuJ");
 
 mod ffi;
 mod goscript;
@@ -49,15 +49,14 @@ pub mod loader {
         Ok(())
     }
 
-    pub fn gol_execute(ctx: Context<GolExecute>, args: Vec<u8>) -> Result<()> {
-        msg!(&ctx.remaining_accounts.len().to_string());
+    pub fn gol_execute(ctx: Context<GolExecute>, id: String, args: Vec<u8>) -> Result<()> {
         crate::goscript::run(
             &ctx.accounts.bytecode.content,
             &ctx.accounts.bytecode.meta,
             ctx.remaining_accounts,
+            &id,
             args,
-        );
-        Ok(())
+        )
     }
 }
 
@@ -85,7 +84,7 @@ pub struct GolFinalize<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(args: Vec<u8>)]
+#[instruction(id: String, args: Vec<u8>)]
 pub struct GolExecute<'info> {
     pub authority: Signer<'info>,
     #[account(has_one = authority)]

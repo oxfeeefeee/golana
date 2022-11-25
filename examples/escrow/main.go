@@ -6,12 +6,14 @@ import (
 )
 
 type IxInit struct {
-	account1 solana.AccountInfo
+	//account1 solana.SignerInfo
 	account2 solana.AccountInfo
 
-	account2Data *TestData
+	//account1DataMut *TestData
+	//account2DataInit  *TestData
 
 	arg1 string
+	arg2 int32
 }
 
 type TestData struct {
@@ -20,7 +22,9 @@ type TestData struct {
 }
 
 func (ix *IxInit) Process() {
-	fmt2.Println("IxInit Process")
+	fmt2.Println("IxInit Process", ix.arg1, ix.arg2)
+	ix.arg1 = "qqqqq"
+	fmt2.Println("IxInit Process", ix.arg1)
 
 }
 

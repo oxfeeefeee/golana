@@ -3,6 +3,7 @@ import { Program } from "@project-serum/anchor";
 import { ComputeBudgetProgram } from '@solana/web3.js';
 import { Loader } from "../target/types/loader";
 import { assert } from "chai";
+import { serialize, BinaryWriter } from 'borsh';
 
 describe("loader", async () => {
     const provider = anchor.AnchorProvider.local();
@@ -112,9 +113,8 @@ describe("loader", async () => {
         assert.ok(bcAccount.finalized);
     });
 
-
-    it("Execute", async () => {
-        await program.methods.golExecute(Buffer.from('My name is Paul')).accounts({
+    let exec = async (args: Uint8Array) => {
+        await program.methods.golExecute('IxInit', args).accounts({
             authority: author.publicKey,
             bytecode: bytecodePK,
             extra: bytecodePK,
@@ -126,6 +126,31 @@ describe("loader", async () => {
 
         let bcAccount = await program.account.golBytecode.fetch(bytecodePK);
         assert.ok(bcAccount.finalized);
-    });
+    }
+
+    // class Assignable {
+    //     constructor(properties) {
+    //         Object.keys(properties).map((key) => {
+    //             this[key] = properties[key];
+    //         });
+    //     }
+    // }
+
+    // class Test extends Assignable { }
+
+    // const value = new Test({ x: 100, y: 20, z: '123' });
+    // const schema = new Map([[Test, { kind: 'struct', fields: [['x', 'u8'], ['y', 'u8'], ['z', 'string']] }]]);
+    // const buffer = serialize(schema, value);
+    // console.log(buffer);
+
+    let writer = new BinaryWriter();
+    writer.writeString("escrow dsfew");
+    writer.writeU32(123);
+    const buf = writer.toArray();
+
+    // const buffer = serialize(null, "escrow dsfew");// Buffer.from(anchor.utils.bytes.utf8.encode("escrow dsfew"));
+    // console.log(buffer);
+
+    it("Execute", async () => exec(buf));
 
 });

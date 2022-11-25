@@ -8,8 +8,22 @@ pub enum GolError {
     IxNotFound,
     #[msg("AccountInfo meta is not found, 'solana' package not imported?")]
     MetaNotFound,
-    #[msg("Cannot find corresponding AccountInfo for the Data declaration")]
-    WrongDataDeclare,
+    #[msg("Method 'process' for the Ix struct is not found")]
+    MethodNotFound,
+    #[msg("Method 'process' has to have a pointer receiver")]
+    NonPointerReceiver,
+    #[msg("Duplicated Account data declaration")]
+    DuplicatedDataDeclare,
+    #[msg("Bad Account data declaration")]
+    BadDataDeclare,
     #[msg("This argument type is not supported")]
     WrongArgType,
+    #[msg("No instruction found with provided ID")]
+    RtCheckBadIxId,
+    #[msg("Unexpected account count provided")]
+    RtCheckAccountCount,
+    #[msg("A signer account is expected")]
+    RtCheckSigner,
+    #[msg("A mutable account is expected")]
+    RtCheckMutable,
 }

@@ -2,13 +2,18 @@ package solana
 
 type PublicKey [32]uint8
 
+type SeedBump struct {
+	Seed string
+	Bump uint8
+}
+
 type AccountInfo struct {
 	/// Public key of the account
-	Key PublicKey
+	Key *PublicKey
 	/// The lamports in the account.  Modifiable by programs.
 	Lamports *uint64
 	/// Program that owns this account
-	Owner PublicKey
+	Owner *PublicKey
 	/// This account's data contains a loaded program (and is now read-only)
 	Executable bool
 	/// The epoch at which this account will next owe rent
@@ -17,21 +22,10 @@ type AccountInfo struct {
 
 type SignerInfo AccountInfo
 
-var nativeSolana ffiSolana
-
-func init() {
-	nativeSolana = ffi(ffiSolana, "solana")
-}
-
-type ffiSolana interface {
-	/// Get current solana Instruction
-	get_ix() Ix
-}
-
 type Ix interface {
 	Process()
 }
 
 func GetIx() Ix {
-	return nativeSolana.get_ix()
+	return solFfi.get_ix()
 }

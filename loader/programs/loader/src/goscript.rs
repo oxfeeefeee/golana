@@ -16,7 +16,7 @@ pub fn run(
 ) -> Result<()> {
     let bc = Bytecode::try_from_slice(bin).unwrap();
     let metas = TxMeta::try_from_slice(meta_bin).unwrap();
-    let ix = Instruction::new(&metas, accounts, id, &args);
+    let ix = Instruction::new(&metas, accounts, id, &args)?;
     let p = std::ptr::addr_of!(ix) as usize;
 
     let mut ffi = goscript_vm::FfiFactory::with_user_data(p);
@@ -24,15 +24,14 @@ pub fn run(
     solana::SolanaFfi::register(&mut ffi);
     goscript_vm::run(&bc, &ffi, None);
 
-    ix.write_back();
+    ix.write_back()?;
     Ok(())
 }
 
 pub(crate) struct Instruction<'a, 'info> {
-    tx_meta: &'a TxMeta,
     accounts: &'a [AccountInfo<'info>],
-    id: &'a str,
     args: &'a Vec<u8>,
+    ix_meta: &'a IxMeta,
     gos_ix: RefCell<Option<GosValue>>,
 }
 
@@ -45,14 +44,22 @@ where
         accounts: &'a [AccountInfo<'info>],
         id: &'a str,
         args: &'a Vec<u8>,
-    ) -> Instruction<'a, 'info> {
-        Instruction {
-            tx_meta,
-            accounts,
-            id,
-            args,
-            gos_ix: RefCell::new(None),
+    ) -> Result<Instruction<'a, 'info>> {
+        let ix_meta = tx_meta
+            .instructions
+            .iter()
+            .find(|x| x.name == id)
+            .ok_or(error!(GolError::RtCheckBadIxId))?;
+        if ix_meta.accounts.len() != accounts.len() {
+            return Err(error!(GolError::RtCheckAccountCount));
         }
+
+        Ok(Instruction {
+            accounts,
+            args,
+            ix_meta,
+            gos_ix: RefCell::new(None),
+        })
     }
 
     pub(crate) fn get_ix(&self, ctx: &mut FfiCtx) -> GosValue {
@@ -60,36 +67,34 @@ where
         match gos_ix {
             Some(val) => val.clone(),
             None => {
-                let ix = Self::deserialize_ix(ctx, self.tx_meta, self.accounts, self.id, self.args)
-                    .unwrap();
+                let ix = self.deserialize_ix(ctx).unwrap();
                 *gos_ix = Some(ix.clone());
                 ix
             }
         }
     }
 
-    fn write_back(&self) {}
-
-    fn deserialize_ix(
-        ctx: &FfiCtx,
-        tx_meta: &TxMeta,
-        accounts: &[AccountInfo],
-        id: &str,
-        args: &Vec<u8>,
-    ) -> Result<GosValue> {
-        let ix_meta = tx_meta
-            .instructions
-            .iter()
-            .find(|x| x.name == id)
-            .ok_or(error!(GolError::RtCheckBadIxId))?;
-
-        if ix_meta.accounts.len() != accounts.len() {
-            return Err(error!(GolError::RtCheckAccountCount));
+    fn write_back(&self) -> Result<()> {
+        let borrowed = self.gos_ix.borrow();
+        let gos_ix = borrowed.as_ref().unwrap();
+        let fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
+        let data_fields = &fields[self.accounts.len()..];
+        for (i, _) in self.ix_meta.accounts_data.iter() {
+            match self.ix_meta.accounts[*i].access_mode {
+                AccessMode::Initialize | AccessMode::Mutable => {
+                    let mut buf: &mut [u8] = &mut self.accounts[*i].data.borrow_mut();
+                    GosValue::serialize_wo_type(&data_fields[*i], &mut buf)?;
+                }
+                _ => {}
+            };
         }
+        Ok(())
+    }
 
+    fn deserialize_ix(&self, ctx: &FfiCtx) -> Result<GosValue> {
         let mut fields = vec![];
-        for (i, acc_meta) in ix_meta.accounts.iter().enumerate() {
-            let account = &accounts[i];
+        for (i, acc_meta) in self.ix_meta.accounts.iter().enumerate() {
+            let account = &self.accounts[i];
             if acc_meta.is_signer != account.is_signer {
                 return Err(error!(GolError::RtCheckSigner));
             }
@@ -101,18 +106,18 @@ where
             }
             fields.push(Self::make_account_info(ctx, account));
         }
-        for (i, data_meta) in ix_meta.accounts_data.iter() {
-            let data = match ix_meta.accounts[*i].access_mode {
+        for (i, data_meta) in self.ix_meta.accounts_data.iter() {
+            let data = match self.ix_meta.accounts[*i].access_mode {
                 AccessMode::Initialize => ctx.zero_val(data_meta),
                 _ => {
-                    let mut buf: &[u8] = &accounts[*i].data.borrow();
+                    let mut buf: &[u8] = &self.accounts[*i].data.borrow();
                     GosValue::deserialize_wo_type(data_meta, &ctx.vm_objs.metas, &mut buf)?
                 }
             };
             fields.push(data);
         }
-        let mut buf: &[u8] = &args;
-        for arg_meta in ix_meta.args.iter() {
+        let mut buf: &[u8] = &self.args;
+        for arg_meta in self.ix_meta.args.iter() {
             fields.push(GosValue::deserialize_wo_type(
                 arg_meta,
                 &ctx.vm_objs.metas,
@@ -120,7 +125,7 @@ where
             )?);
         }
 
-        Ok(Self::make_interface(ctx.new_struct(fields), ix_meta))
+        Ok(Self::make_interface(ctx.new_struct(fields), self.ix_meta))
     }
 
     fn make_interface(ix: GosValue, ix_meta: &IxMeta) -> GosValue {

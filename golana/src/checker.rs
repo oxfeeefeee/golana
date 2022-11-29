@@ -59,10 +59,11 @@ impl IxMeta {
             .then_some(method_desc.func.unwrap())
             .ok_or(error!(GolError::NonPointerReceiver))?;
 
-        // Now build struct fields
+        // Build struct fields
         let fields = metas[inner_meta.key].as_struct().infos();
         let mut i = 0;
         let mut accounts: Vec<(AccountMeta, &str)> = vec![];
+
         // First, get all AccountInfo
         while i < fields.len() {
             let meta = &fields[i].meta;

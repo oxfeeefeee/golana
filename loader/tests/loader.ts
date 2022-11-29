@@ -1,6 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { ComputeBudgetProgram } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, Connection, Commitment, ComputeBudgetProgram } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
 import { Loader } from "../target/types/loader";
 import { assert } from "chai";
 import { serialize, BinaryWriter } from 'borsh';
@@ -11,16 +12,15 @@ describe("loader", async () => {
     // Configure the client to use the local cluster.
     anchor.setProvider(provider);
 
-    const program = anchor.workspace.Loader as Program<Loader>;
+    const golanaProgram = anchor.workspace.Loader as Program<Loader>;
 
     // Author for the tests.
     const author = anchor.web3.Keypair.generate();
     // Create Golana account
     const seed = "test2";
     const bytecodePK = await anchor.web3.PublicKey.createWithSeed(
-        author.publicKey, seed, program.programId
+        author.publicKey, seed, golanaProgram.programId
     );
-
 
     it("Create", async () => {
         // Airdropping tokens to author.
@@ -42,7 +42,7 @@ describe("loader", async () => {
                         seed: seed,
                         lamports: 100000000,
                         space: 8 * 1024,
-                        programId: program.programId,
+                        programId: golanaProgram.programId,
                     })
                 );
                 return tx;
@@ -55,12 +55,12 @@ describe("loader", async () => {
 
 
     it("Initialize", async () => {
-        await program.methods.golInitialize(seed).accounts({
+        await golanaProgram.methods.golInitialize(seed).accounts({
             authority: author.publicKey,
             bytecode: bytecodePK,
         }).signers([author]).rpc({ skipPreflight: true });
 
-        let bcAccount = await program.account.golBytecode.fetch(bytecodePK);
+        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
         console.log(bcAccount);
 
         assert.ok(bcAccount.authority.equals(author.publicKey));
@@ -81,7 +81,7 @@ describe("loader", async () => {
             const end = Math.min(totalSent + size, content.length);
             const data = content.slice(totalSent, end);
 
-            await program.methods.golWrite(data).accounts({
+            await golanaProgram.methods.golWrite(data).accounts({
                 authority: author.publicKey,
                 bytecode: bytecodePK,
             }).preInstructions(
@@ -94,13 +94,13 @@ describe("loader", async () => {
             console.log("Total sent: ", totalSent);
         }
 
-        let bcAccount = await program.account.golBytecode.fetch(bytecodePK);
+        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
         assert.ok(bcAccount.content.length == content.length);
     });
 
 
     it("Finalize", async () => {
-        await program.methods.golFinalize().accounts({
+        await golanaProgram.methods.golFinalize().accounts({
             authority: author.publicKey,
             bytecode: bytecodePK,
         }).preInstructions(
@@ -109,12 +109,12 @@ describe("loader", async () => {
                 ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
         ).signers([author]).rpc({ skipPreflight: true });
 
-        let bcAccount = await program.account.golBytecode.fetch(bytecodePK);
+        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
         assert.ok(bcAccount.finalized);
     });
 
     let exec = async (args: Uint8Array) => {
-        await program.methods.golExecute('IxInit', args).accounts({
+        await golanaProgram.methods.golExecute('IxInit', args).accounts({
             authority: author.publicKey,
             bytecode: bytecodePK,
             extra: bytecodePK,
@@ -124,7 +124,7 @@ describe("loader", async () => {
                 ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
         ).signers([author]).rpc({ skipPreflight: true });
 
-        let bcAccount = await program.account.golBytecode.fetch(bytecodePK);
+        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
         assert.ok(bcAccount.finalized);
     }
 
@@ -152,5 +152,128 @@ describe("loader", async () => {
     // console.log(buffer);
 
     it("Execute", async () => exec(buf));
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // Set up escrow 
+    let mintA = null;
+    let mintB = null;
+    let initializerTokenAccountA = null;
+    let initializerTokenAccountB = null;
+    let takerTokenAccountA = null;
+    let takerTokenAccountB = null;
+    let vault_account_pda = null;
+    let vault_account_bump = null;
+    let vault_authority_pda = null;
+
+    const takerAmount = 1000;
+    const initializerAmount = 500;
+
+    const escrowAccount = anchor.web3.Keypair.generate();
+    const payer = anchor.web3.Keypair.generate();
+    const mintAuthority = anchor.web3.Keypair.generate();
+    const initializerMainAccount = anchor.web3.Keypair.generate();
+    const takerMainAccount = anchor.web3.Keypair.generate();
+
+    it("Initialize program state", async () => {
+        // Airdropping tokens to a payer.
+        await provider.connection.confirmTransaction(
+            await provider.connection.requestAirdrop(payer.publicKey, 1000000000),
+            "processed"
+        );
+
+        // Fund Main Accounts
+        await provider.sendAndConfirm(
+            (() => {
+                const tx = new Transaction();
+                tx.add(
+                    SystemProgram.transfer({
+                        fromPubkey: payer.publicKey,
+                        toPubkey: initializerMainAccount.publicKey,
+                        lamports: 100000000,
+                    }),
+                    SystemProgram.transfer({
+                        fromPubkey: payer.publicKey,
+                        toPubkey: takerMainAccount.publicKey,
+                        lamports: 100000000,
+                    })
+                );
+                return tx;
+            })(),
+            [payer],
+            { skipPreflight: true },
+        );
+
+        mintA = await createMint(
+            provider.connection,
+            payer,
+            mintAuthority.publicKey,
+            null,
+            15
+        );
+
+        mintB = await createMint(
+            provider.connection,
+            payer,
+            mintAuthority.publicKey,
+            null,
+            15
+        );
+
+        initializerTokenAccountA = await createAccount(provider.connection,
+            payer, mintA, initializerMainAccount.publicKey);
+        takerTokenAccountA = await createAccount(provider.connection,
+            payer, mintA, takerMainAccount.publicKey);
+
+        initializerTokenAccountB = await createAccount(provider.connection,
+            payer, mintB, initializerMainAccount.publicKey);
+        takerTokenAccountB = await createAccount(provider.connection,
+            payer, mintB, takerMainAccount.publicKey);
+
+        await mintTo(
+            provider.connection,
+            payer,
+            mintA,
+            initializerTokenAccountA,
+            mintAuthority.publicKey,
+            initializerAmount,
+            [mintAuthority],
+        );
+
+        await mintTo(
+            provider.connection,
+            payer,
+            mintB,
+            takerTokenAccountB,
+            mintAuthority.publicKey,
+            takerAmount,
+            [mintAuthority],
+        );
+
+        let _initializerTokenAccountA = await getAccount(provider.connection, initializerTokenAccountA);
+        let _takerTokenAccountB = await getAccount(provider.connection, takerTokenAccountB);
+
+        assert.ok(Number(_initializerTokenAccountA.amount) == initializerAmount);
+        assert.ok(Number(_takerTokenAccountB.amount) == takerAmount);
+    });
+    ////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////
+    it("Initialize escrow", async () => {
+        const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
+            [Buffer.from(anchor.utils.bytes.utf8.encode(bytecodePK.toBase58() + "/token-seed"))],
+            golanaProgram.programId
+        );
+        vault_account_pda = _vault_account_pda;
+        vault_account_bump = _vault_account_bump;
+
+        const [_vault_authority_pda, _vault_authority_bump] = await PublicKey.findProgramAddress(
+            [Buffer.from(anchor.utils.bytes.utf8.encode(bytecodePK.toBase58() + "/escrow"))],
+            golanaProgram.programId
+        );
+        vault_authority_pda = _vault_authority_pda;
+    })
 
 });

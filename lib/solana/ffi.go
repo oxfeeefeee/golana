@@ -10,7 +10,7 @@ type ffiSolana interface {
 	/// Get current solana Instruction
 	get_ix() Ix
 
-	find_program_address(program *PublicKey) (*PublicKey, uint8)
+	find_program_address(seed string, program *PublicKey) (*PublicKey, uint8)
 
 	token_set_authority(accountOrMint, currentAuth, newAuth *PublicKey) error
 

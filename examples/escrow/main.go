@@ -22,9 +22,10 @@ type TestData struct {
 }
 
 func (ix *IxInit) Process() {
-	fmt2.Println("IxInit Process", ix.arg1, ix.arg2)
+	fmt2.Println("IxInit Process--", ix.arg1, ix.arg2)
 	ix.arg1 = "qqqqq"
-	fmt2.Println("IxInit Process", ix.arg1)
+	pk, bump := ix.account2.Key.FindProgramAddress("xxxxx")
+	fmt2.Println("IxInit Process", ix.arg1, pk, bump)
 
 }
 

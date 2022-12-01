@@ -20,6 +20,10 @@ type AccountInfo struct {
 	RentEpoch uint64
 }
 
+func (pk *PublicKey) FindProgramAddress(seed string) (*PublicKey, uint8) {
+	return solFfi.find_program_address(seed, pk)
+}
+
 type SignerInfo AccountInfo
 
 type Ix interface {

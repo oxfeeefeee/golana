@@ -20,6 +20,7 @@ default = ["custom-heap"]
 anchor-lang = "0.25.0"
 solana-program = "1.10.41"
 borsh = "0.9.3" 
+spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
 
 [dependencies.goscript-vm] 
 path = "../../../../goscript/vm"

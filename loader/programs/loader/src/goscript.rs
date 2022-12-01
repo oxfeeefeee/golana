@@ -2,7 +2,7 @@ use crate::ffi::{fmt2, solana};
 use anchor_lang::prelude::*;
 use borsh::de::BorshDeserialize;
 use golana::*;
-use goscript_vm::types::{GosValue, ValueType};
+use goscript_vm::types::GosValue;
 use goscript_vm::*;
 use solana_program::account_info::AccountInfo;
 use std::cell::RefCell;
@@ -138,16 +138,11 @@ where
     }
 
     fn make_account_info(ctx: &FfiCtx, ai: &AccountInfo) -> GosValue {
-        let key = Self::make_pub_key(ctx, ai.key);
+        let key = solana::SolanaFfi::make_pub_key_ptr(ctx, *ai.key);
         let lamports: GosValue = (**ai.lamports.borrow()).into();
-        let owner = Self::make_pub_key(ctx, ai.owner);
+        let owner = solana::SolanaFfi::make_pub_key_ptr(ctx, *ai.owner);
         let executable: GosValue = ai.executable.into();
         let rent_epoch: GosValue = ai.rent_epoch.into();
         ctx.new_struct(vec![key, lamports, owner, executable, rent_epoch])
-    }
-
-    #[inline]
-    fn make_pub_key(ctx: &FfiCtx, key: &Pubkey) -> GosValue {
-        ctx.new_1byte_array(key.to_bytes().to_vec(), ValueType::Uint8)
     }
 }

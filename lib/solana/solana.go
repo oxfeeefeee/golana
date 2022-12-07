@@ -7,17 +7,32 @@ type SeedBump struct {
 	Bump uint8
 }
 
+type AuthorityType uint8
+
+const (
+	// Authority to mint new tokens
+	AuthMintTokens AuthorityType = iota
+	// Authority to freeze any account associated with the Mint
+	AuthFreezeAccount
+	// Owner of a given token account
+	AuthAccountOwner
+	// Authority to close a token account
+	AuthCloseAccount
+)
+
 type AccountInfo struct {
-	/// Public key of the account
+	// Public key of the account
 	Key *PublicKey
-	/// The lamports in the account.  Modifiable by programs.
-	Lamports *uint64
-	/// Program that owns this account
+	// The lamports in the account.  Modifiable by programs.
+	Lamports uint64
+	// Program that owns this account
 	Owner *PublicKey
-	/// This account's data contains a loaded program (and is now read-only)
+	// This account's data contains a loaded program (and is now read-only)
 	Executable bool
-	/// The epoch at which this account will next owe rent
+	// The epoch at which this account will next owe rent
 	RentEpoch uint64
+	// For internal use, do not access
+	index uint
 }
 
 func (pk *PublicKey) FindProgramAddress(seed string) (*PublicKey, uint8) {
@@ -27,9 +42,25 @@ func (pk *PublicKey) FindProgramAddress(seed string) (*PublicKey, uint8) {
 type SignerInfo AccountInfo
 
 type Ix interface {
-	Process()
+	Process() error
 }
 
 func GetIx() Ix {
 	return solFfi.get_ix()
+}
+
+func CommitLamports(account *AccountInfo) {
+	solFfi.commit_lamports(account.index)
+}
+
+func CommitData(account *AccountInfo) {
+	solFfi.commit_data(account.index)
+}
+
+func CommitAll(account *AccountInfo) {
+	solFfi.commit_all(account.index)
+}
+
+func AbortOnError(e error) {
+	solFfi.abort_on_error(e)
 }

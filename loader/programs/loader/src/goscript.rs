@@ -29,10 +29,10 @@ pub fn run(
 }
 
 pub(crate) struct Instruction<'a, 'info> {
-    accounts: &'a [AccountInfo<'info>],
-    args: &'a Vec<u8>,
-    ix_meta: &'a IxMeta,
-    gos_ix: RefCell<Option<GosValue>>,
+    pub accounts: &'a [AccountInfo<'info>],
+    pub args: &'a Vec<u8>,
+    pub ix_meta: &'a IxMeta,
+    pub gos_ix: RefCell<Option<GosValue>>,
 }
 
 impl<'a, 'info> Instruction<'a, 'info>
@@ -62,7 +62,7 @@ where
         })
     }
 
-    pub(crate) fn get_ix(&self, ctx: &mut FfiCtx) -> GosValue {
+    pub(crate) fn get_ix(&self, ctx: &FfiCtx) -> GosValue {
         let gos_ix: &mut Option<GosValue> = &mut self.gos_ix.borrow_mut();
         match gos_ix {
             Some(val) => val.clone(),
@@ -104,7 +104,7 @@ where
             {
                 return Err(error!(GolError::RtCheckMutable));
             }
-            fields.push(Self::make_account_info(ctx, account));
+            fields.push(solana::SolanaFfi::make_account_info_ptr(ctx, account, i));
         }
         for (i, data_meta) in self.ix_meta.accounts_data.iter() {
             let data = match self.ix_meta.accounts[*i].access_mode {
@@ -135,14 +135,5 @@ where
             None,
         )];
         FfiCtx::new_interface(ix, Some((ix_meta.gos_meta, binding)))
-    }
-
-    fn make_account_info(ctx: &FfiCtx, ai: &AccountInfo) -> GosValue {
-        let key = solana::SolanaFfi::make_pub_key_ptr(ctx, *ai.key);
-        let lamports: GosValue = (**ai.lamports.borrow()).into();
-        let owner = solana::SolanaFfi::make_pub_key_ptr(ctx, *ai.owner);
-        let executable: GosValue = ai.executable.into();
-        let rent_epoch: GosValue = ai.rent_epoch.into();
-        ctx.new_struct(vec![key, lamports, owner, executable, rent_epoch])
     }
 }

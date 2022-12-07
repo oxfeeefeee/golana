@@ -6,13 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0"
 clap = { version = "4.0.18", features = ["derive"] }
 toml = "0.5.9"
 serde = "1.0.136"
 serde_derive = "1.0.136"
+borsh = "0.9.3" 
 
 [dependencies.goscript-engine] 
 path = "../../goscript/engine"
 default-features = false
 features = ["read_fs", "codegen", "btree_map"]
+version = "0.1.0"
+
+
+[dependencies.golana] 
+path = "../golana" 
 version = "0.1.0"

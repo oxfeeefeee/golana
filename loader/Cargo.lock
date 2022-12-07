@@ -762,6 +762,7 @@ name = "loader"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "anyhow",
  "borsh",
  "golana",
  "goscript-vm",

@@ -54,7 +54,7 @@ fn processor() -> std::io::Result<()> {
     let cli = Cli::parse();
     match &cli.command {
         Some(Commands::Build { out_dir }) => {
-            build::build(&cfg.project.name, out_dir);
+            build::build(&cfg.project.name, out_dir).unwrap();
         }
         Some(Commands::Deploy { path }) => {
             dbg!(path);

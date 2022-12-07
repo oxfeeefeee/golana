@@ -1,23 +1,32 @@
+use anyhow::Result;
+use borsh::ser::BorshSerialize;
+use golana;
 use goscript_engine as gos;
-use std::io::{Result, Write};
+use std::io::Write;
 use std::path::Path;
 
-pub fn build(proj_name: &str, out_dir: &Path) {
+pub fn build(proj_name: &str, out_dir: &Path) -> Result<(), ()> {
     let reader =
         gos::run_fs::FsReader::new(Some(Path::new("./")), Some(Path::new("../../lib/")), None);
     let engine = gos::Engine::new();
-    match engine.compile_serialize(false, false, &reader, Path::new("./main.go")) {
-        Ok(data) => {
-            write_file(proj_name, out_dir, &data).expect("Unable to write file");
-        }
-        Err(el) => {
+    let (bc, _) = engine
+        .compile(false, false, &reader, Path::new("./main.go"))
+        .map_err(|el| {
             el.sort();
-            eprint!("{}", el);
-        }
-    }
+            eprint!("compile error: {}", el);
+        })?;
+
+    golana::check(&bc).map_err(|e| {
+        eprint!("check error: {}", e);
+    })?;
+
+    let buf = bc.try_to_vec().unwrap();
+    write_file(proj_name, out_dir, &buf).map_err(|e| {
+        eprint!("write file error: {}", e);
+    })
 }
 
-fn write_file(proj_name: &str, out_dir: &Path, data: &Vec<u8>) -> Result<()> {
+fn write_file(proj_name: &str, out_dir: &Path, data: &Vec<u8>) -> std::io::Result<()> {
     std::fs::create_dir_all(out_dir)?;
 
     let file_name = format!("{}.gosb", proj_name);
@@ -26,6 +35,7 @@ fn write_file(proj_name: &str, out_dir: &Path, data: &Vec<u8>) -> Result<()> {
 
     let mut f = std::fs::OpenOptions::new()
         .write(true)
+        .truncate(true)
         .create(true)
         .open(full_name)?;
     f.write_all(data)?;

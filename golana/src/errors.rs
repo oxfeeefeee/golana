@@ -12,6 +12,8 @@ pub enum GolError {
     MethodNotFound,
     #[msg("Method 'process' has to have a pointer receiver")]
     NonPointerReceiver,
+    #[msg("AccountInfo in Ix has to be a pointer")]
+    NonPointerAccountInfo,
     #[msg("Duplicated Account data declaration")]
     DuplicatedDataDeclare,
     #[msg("Bad Account data declaration")]
@@ -26,4 +28,7 @@ pub enum GolError {
     RtCheckSigner,
     #[msg("A mutable account is expected")]
     RtCheckMutable,
+
+    #[msg("Bad AuthorityType value")]
+    BadAuthorityType,
 }

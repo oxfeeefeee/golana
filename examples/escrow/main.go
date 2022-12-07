@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt2"
-	"solana"
+	. "solana"
 )
 
 type IxInit struct {
-	//account1 solana.SignerInfo
-	account2 solana.AccountInfo
+	//account1 *SignerInfo
+	account2 *AccountInfo
 
 	//account1DataMut *TestData
 	//account2DataInit  *TestData
@@ -21,14 +21,15 @@ type TestData struct {
 	j string
 }
 
-func (ix *IxInit) Process() {
+func (ix *IxInit) Process() error {
 	fmt2.Println("IxInit Process--", ix.arg1, ix.arg2)
 	ix.arg1 = "qqqqq"
 	pk, bump := ix.account2.Key.FindProgramAddress("xxxxx")
 	fmt2.Println("IxInit Process", ix.arg1, pk, bump)
 
+	return nil
 }
 
 func main() {
-	solana.GetIx().Process()
+	AbortOnError(GetIx().Process())
 }

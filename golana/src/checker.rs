@@ -67,7 +67,10 @@ impl IxMeta {
         // First, get all AccountInfo
         while i < fields.len() {
             let meta = &fields[i].meta;
-            if meta == account || meta == signer {
+            if meta.key == account.key || meta.key == signer.key {
+                if meta.ptr_depth != 1 {
+                    return Err(error!(GolError::NonPointerAccountInfo));
+                }
                 accounts.push((
                     AccountMeta {
                         is_signer: meta == signer,

@@ -17,6 +17,7 @@ cpi = ["no-entrypoint"]
 default = ["custom-heap"]
 
 [dependencies]
+anyhow = "1.0"
 anchor-lang = "0.25.0"
 solana-program = "1.10.41"
 borsh = "0.9.3" 

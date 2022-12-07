@@ -4,8 +4,14 @@ use golana::*;
 use goscript_vm::types::*;
 use goscript_vm::*;
 use solana_program::{self, account_info::AccountInfo, pubkey::Pubkey};
-use spl_token::{self, instruction::AuthorityType, ID};
+use spl_token::{self, instruction::AuthorityType};
 use std::rc::Rc;
+
+macro_rules! ref_seeds {
+    ($seeds_vec: expr) => {{
+        $seeds_vec.iter().map(|x| &x[..]).collect::<Vec<&[&[u8]]>>()
+    }};
+}
 
 #[derive(UnsafePtr)]
 pub struct Error(anyhow::Error);
@@ -27,7 +33,7 @@ impl SolanaFfi {
         unimplemented!()
     }
 
-    fn ffi_all(ctx: &mut FfiCtx, index: usize) {
+    fn ffi_commit_all(ctx: &mut FfiCtx, index: usize) {
         unimplemented!()
     }
 
@@ -49,70 +55,92 @@ impl SolanaFfi {
         current_auth_index: usize,
         new_auth_key: GosValue,
         auth_type: u8,
-        seeds: GosValue,
+        signer_seeds: GosValue,
     ) -> GosValue {
-        let result = Self::token_set_authority(
-            ctx,
-            account_or_mint_index,
-            current_auth_index,
-            new_auth_key,
-            auth_type,
-            seeds,
-        );
-        let (_, err) = Self::make_err_unsafe_ptr(result);
-        err
+        let result: anyhow::Result<()> = (move || {
+            let inst = Self::get_instruction(ctx);
+            let account_or_mint = &inst.accounts[account_or_mint_index];
+            let current_auth = &inst.accounts[current_auth_index];
+            let mut spl_new_authority: Option<Pubkey> = None;
+            if !new_auth_key.is_nil() {
+                spl_new_authority = Some(Self::get_pub_key(ctx, &new_auth_key)?);
+            }
+            let ix = spl_token::instruction::set_authority(
+                &spl_token::ID,
+                account_or_mint.key,
+                spl_new_authority.as_ref(),
+                Self::into_authority_type(auth_type)?,
+                current_auth.key,
+                &[], // TODO: Support multisig signers.
+            )?;
+            solana_program::program::invoke_signed(
+                &ix,
+                &[account_or_mint.clone(), current_auth.clone()],
+                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+            )
+            .map_err(Into::into)
+        })();
+        Self::make_err(result)
     }
 
-    // fn ffi_token_transfer(
-    //     from: GosValue,
-    //     to: GosValue,
-    //     anth: GosValue,
-    //     amount: u64,
-    //     signer_seeds: GosValue,
-    // ) -> RuntimeResult<()> {
-    // }
+    fn ffi_token_transfer(
+        ctx: &FfiCtx,
+        from_index: usize,
+        to_index: usize,
+        auth_index: usize,
+        amount: u64,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let result: anyhow::Result<()> = (move || {
+            let inst = Self::get_instruction(ctx);
+            let from = &inst.accounts[from_index];
+            let to = &inst.accounts[to_index];
+            let auth = &inst.accounts[auth_index];
+            let ix = spl_token::instruction::transfer(
+                &spl_token::ID,
+                from.key,
+                to.key,
+                auth.key,
+                &[],
+                amount,
+            )?;
+            solana_program::program::invoke_signed(
+                &ix,
+                &[from.clone(), to.clone(), auth.clone()],
+                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+            )
+            .map_err(Into::into)
+        })();
+        Self::make_err(result)
+    }
 
-    // fn ffi_token_close_account(
-    //     account: GosValue,
-    //     dest: GosValue,
-    //     auth: GosValue,
-    //     signer_seeds: GosValue,
-    // ) -> RuntimeResult<()> {
-    // }
-
-    fn token_set_authority(
-        ctx: &mut FfiCtx,
-        account_or_mint_index: usize,
-        current_auth_index: usize,
-        new_auth_key: GosValue,
-        auth_type: u8,
-        seeds: GosValue,
-    ) -> anyhow::Result<()> {
-        let inst = Self::get_instruction(ctx);
-        let account_or_mint = &inst.accounts[account_or_mint_index];
-        let current_auth = &inst.accounts[current_auth_index];
-        let mut spl_new_authority: Option<Pubkey> = None;
-        if !new_auth_key.is_nil() {
-            spl_new_authority = Some(Self::get_pub_key(ctx, &new_auth_key)?);
-        }
-
-        let ix = spl_token::instruction::set_authority(
-            &spl_token::ID,
-            account_or_mint.key,
-            spl_new_authority.as_ref(),
-            Self::into_authority_type(auth_type)?,
-            current_auth.key,
-            &[], // TODO: Support multisig signers.
-        )?;
-
-        let seeds_vec = Self::get_signers_seeds(&seeds);
-        let seeds_ref: Vec<&[&[u8]]> = seeds_vec.iter().map(|x| &x[..]).collect();
-        solana_program::program::invoke_signed(
-            &ix,
-            &[account_or_mint.clone(), current_auth.clone()],
-            &seeds_ref[..],
-        )
-        .map_err(Into::into)
+    fn ffi_token_close_account(
+        ctx: &FfiCtx,
+        account_index: usize,
+        dest_index: usize,
+        auth_index: usize,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let result: anyhow::Result<()> = (move || {
+            let inst = Self::get_instruction(ctx);
+            let account = &inst.accounts[account_index];
+            let dest = &inst.accounts[dest_index];
+            let auth = &inst.accounts[auth_index];
+            let ix = spl_token::instruction::close_account(
+                &spl_token::ID,
+                account.key,
+                dest.key,
+                auth.key,
+                &[], // TODO: support multisig
+            )?;
+            solana_program::program::invoke_signed(
+                &ix,
+                &[account.clone(), dest.clone(), auth.clone()],
+                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+            )
+            .map_err(Into::into)
+        })();
+        Self::make_err(result)
     }
 
     fn into_authority_type(val: u8) -> Result<AuthorityType> {
@@ -145,10 +173,10 @@ impl SolanaFfi {
     }
 
     #[inline]
-    pub(crate) fn make_err_unsafe_ptr<T>(result: anyhow::Result<T>) -> (Option<T>, GosValue) {
+    pub(crate) fn make_err<T>(result: anyhow::Result<T>) -> GosValue {
         match result {
-            Ok(r) => (Some(r), FfiCtx::new_nil(ValueType::UnsafePtr)),
-            Err(e) => (None, FfiCtx::new_unsafe_ptr(Rc::new(Error(e)))),
+            Ok(_) => FfiCtx::new_nil(ValueType::UnsafePtr),
+            Err(e) => FfiCtx::new_unsafe_ptr(Rc::new(Error(e))),
         }
     }
 
@@ -158,10 +186,6 @@ impl SolanaFfi {
         unsafe { p.as_ref() }.unwrap()
     }
 
-    fn get_account_info<'a>(ctx: &FfiCtx, fields: &'a Vec<GosValue>) -> AccountInfo<'a> {
-        unimplemented!();
-    }
-
     fn get_pub_key(ctx: &FfiCtx, ptr: &GosValue) -> RuntimeResult<Pubkey> {
         let ptr_obj = ptr.as_non_nil_pointer()?;
         let pk = ptr_obj.deref(&ctx.stack, &ctx.vm_objs.packages)?;
@@ -169,7 +193,7 @@ impl SolanaFfi {
         Ok(Pubkey::new(slice))
     }
 
-    fn get_signers_seeds<'a>(seeds: &GosValue) -> Vec<[&'a [u8]; 2]> {
+    fn get_signers_seeds<'a>(seeds: &'a GosValue) -> Vec<[&'a [u8]; 2]> {
         if let Some((slice, _)) = seeds.as_gos_slice() {
             let data = slice.as_rust_slice();
             data.iter()

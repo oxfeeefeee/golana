@@ -57,10 +57,16 @@ func CommitData(account *AccountInfo) {
 	solFfi.commit_data(account.index)
 }
 
-func CommitAll(account *AccountInfo) {
-	solFfi.commit_all(account.index)
+func CommitLamportsAndData(account *AccountInfo) {
+	solFfi.commit_lamports_and_data(account.index)
+}
+
+func CommitEverything() {
+	solFfi.commit_everything()
 }
 
 func AbortOnError(e error) {
-	solFfi.abort_on_error(e)
+	if e != nil {
+		panic(e)
+	}
 }

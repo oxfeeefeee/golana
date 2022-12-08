@@ -6,17 +6,28 @@ use goscript_vm::*;
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone, PartialEq, Eq)]
 pub enum AccessMode {
     None,
-    Initialize,
+    Initialize(usize),
     ReadOnly,
-    Mutable,
+    Mutable(usize),
 }
 
 impl AccessMode {
-    pub fn try_with_name(name: &str) -> Option<AccessMode> {
+    pub fn try_with_name(name: &str, index: usize) -> Option<AccessMode> {
         match name {
             "Data" => Some(Self::ReadOnly),
-            "DataInit" => Some(Self::Initialize),
-            "DataMut" => Some(Self::Mutable),
+            "DataInit" => Some(Self::Initialize(index)),
+            "DataMut" => Some(Self::Mutable(index)),
+            _ => None,
+        }
+    }
+
+    pub fn is_writable(&self) -> bool {
+        self.get_data_index().is_some()
+    }
+
+    pub fn get_data_index(&self) -> Option<usize> {
+        match self {
+            Self::Initialize(i) | Self::Mutable(i) => Some(*i),
             _ => None,
         }
     }
@@ -93,7 +104,8 @@ impl IxMeta {
                 for (index, acc) in accounts.iter_mut().enumerate() {
                     if field.name.starts_with(acc.1) {
                         let mode_name = &field.name[acc.1.len()..];
-                        if let Some(mode) = AccessMode::try_with_name(mode_name) {
+                        let data_index = accounts_data.len();
+                        if let Some(mode) = AccessMode::try_with_name(mode_name, data_index) {
                             if acc.0.access_mode != AccessMode::None {
                                 return Err(error!(GolError::DuplicatedDataDeclare));
                             }

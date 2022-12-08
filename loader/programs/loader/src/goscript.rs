@@ -24,7 +24,6 @@ pub fn run(
     solana::SolanaFfi::register(&mut ffi);
     goscript_vm::run(&bc, &ffi, None);
 
-    ix.write_back()?;
     Ok(())
 }
 
@@ -74,19 +73,30 @@ where
         }
     }
 
-    fn write_back(&self) -> Result<()> {
+    pub(crate) fn write_back_data(
+        &self,
+        indices: std::ops::Range<usize>,
+        lamports: bool,
+        data: bool,
+    ) -> Result<()> {
         let borrowed = self.gos_ix.borrow();
         let gos_ix = borrowed.as_ref().unwrap();
-        let fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
-        let data_fields = &fields[self.accounts.len()..];
-        for (i, _) in self.ix_meta.accounts_data.iter() {
-            match self.ix_meta.accounts[*i].access_mode {
-                AccessMode::Initialize | AccessMode::Mutable => {
-                    let mut buf: &mut [u8] = &mut self.accounts[*i].data.borrow_mut();
-                    GosValue::serialize_wo_type(&data_fields[*i], &mut buf)?;
+        let ix_fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
+        for index in indices {
+            let account_info_fields: &Vec<GosValue> =
+                &ix_fields[index].as_struct().0.borrow_fields();
+            if lamports {
+                let val = *account_info_fields[1].as_uint64();
+                **self.accounts[index].lamports.borrow_mut() = val;
+            }
+            if data {
+                let data_fields = &account_info_fields[self.accounts.len()..];
+                let account_meta = &self.ix_meta.accounts[index];
+                if let Some(data_index) = account_meta.access_mode.get_data_index() {
+                    let mut buf: &mut [u8] = &mut self.accounts[index].data.borrow_mut();
+                    GosValue::serialize_wo_type(&data_fields[data_index], &mut buf)?;
                 }
-                _ => {}
-            };
+            }
         }
         Ok(())
     }
@@ -98,17 +108,14 @@ where
             if acc_meta.is_signer != account.is_signer {
                 return Err(error!(GolError::RtCheckSigner));
             }
-            if (acc_meta.access_mode == AccessMode::Mutable
-                || acc_meta.access_mode == AccessMode::Initialize)
-                != account.is_writable
-            {
+            if acc_meta.access_mode.is_writable() != account.is_writable {
                 return Err(error!(GolError::RtCheckMutable));
             }
             fields.push(solana::SolanaFfi::make_account_info_ptr(ctx, account, i));
         }
         for (i, data_meta) in self.ix_meta.accounts_data.iter() {
             let data = match self.ix_meta.accounts[*i].access_mode {
-                AccessMode::Initialize => ctx.zero_val(data_meta),
+                AccessMode::Initialize(_) => ctx.zero_val(data_meta),
                 _ => {
                     let mut buf: &[u8] = &self.accounts[*i].data.borrow();
                     GosValue::deserialize_wo_type(data_meta, &ctx.vm_objs.metas, &mut buf)?

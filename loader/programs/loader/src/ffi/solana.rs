@@ -21,27 +21,40 @@ pub struct SolanaFfi;
 
 #[ffi_impl]
 impl SolanaFfi {
-    fn ffi_get_ix(ctx: &mut FfiCtx) -> GosValue {
+    fn ffi_get_ix(ctx: &FfiCtx) -> GosValue {
         Self::get_instruction(ctx).get_ix(ctx)
     }
 
-    fn ffi_commit_lamports(ctx: &mut FfiCtx, index: usize) {
-        unimplemented!()
+    fn ffi_commit_lamports(ctx: &FfiCtx, index: usize) {
+        Self::get_instruction(ctx)
+            .write_back_data(index..index + 1, true, false)
+            .unwrap();
     }
 
-    fn ffi_commit_data(ctx: &mut FfiCtx, index: usize) {
-        unimplemented!()
+    fn ffi_commit_data(ctx: &FfiCtx, index: usize) {
+        Self::get_instruction(ctx)
+            .write_back_data(index..index + 1, false, true)
+            .unwrap();
     }
 
-    fn ffi_commit_all(ctx: &mut FfiCtx, index: usize) {
-        unimplemented!()
+    fn ffi_commit_lamports_and_data(ctx: &FfiCtx, index: usize) {
+        Self::get_instruction(ctx)
+            .write_back_data(index..index + 1, true, true)
+            .unwrap();
     }
 
-    fn ffi_find_program_address(
-        ctx: &mut FfiCtx,
-        seed: GosValue,
-        program: GosValue,
-    ) -> (GosValue, u8) {
+    fn ffi_commit_everything(ctx: &FfiCtx) {
+        let ix = Self::get_instruction(ctx);
+        ix.write_back_data(0..ix.accounts.len(), true, true)
+            .unwrap();
+    }
+
+    fn ffi_error_string(e: GosValue) -> RuntimeResult<String> {
+        let rust_err = e.as_non_nil_unsafe_ptr()?.downcast_ref::<Error>()?;
+        Ok(rust_err.0.to_string())
+    }
+
+    fn ffi_find_program_address(ctx: &FfiCtx, seed: GosValue, program: GosValue) -> (GosValue, u8) {
         let program_id =
             Self::get_pub_key(ctx, &program).expect("ffi_find_program_address: bad program id");
         let seed_str = seed.as_string().as_str();
@@ -50,7 +63,7 @@ impl SolanaFfi {
     }
 
     fn ffi_token_set_authority(
-        ctx: &mut FfiCtx,
+        ctx: &FfiCtx,
         account_or_mint_index: usize,
         current_auth_index: usize,
         new_auth_key: GosValue,
@@ -80,7 +93,7 @@ impl SolanaFfi {
             )
             .map_err(Into::into)
         })();
-        Self::make_err(result)
+        Self::make_err_unsafe_ptr(result)
     }
 
     fn ffi_token_transfer(
@@ -111,7 +124,7 @@ impl SolanaFfi {
             )
             .map_err(Into::into)
         })();
-        Self::make_err(result)
+        Self::make_err_unsafe_ptr(result)
     }
 
     fn ffi_token_close_account(
@@ -140,7 +153,7 @@ impl SolanaFfi {
             )
             .map_err(Into::into)
         })();
-        Self::make_err(result)
+        Self::make_err_unsafe_ptr(result)
     }
 
     fn into_authority_type(val: u8) -> Result<AuthorityType> {
@@ -173,7 +186,7 @@ impl SolanaFfi {
     }
 
     #[inline]
-    pub(crate) fn make_err<T>(result: anyhow::Result<T>) -> GosValue {
+    pub(crate) fn make_err_unsafe_ptr<T>(result: anyhow::Result<T>) -> GosValue {
         match result {
             Ok(_) => FfiCtx::new_nil(ValueType::UnsafePtr),
             Err(e) => FfiCtx::new_unsafe_ptr(Rc::new(Error(e))),

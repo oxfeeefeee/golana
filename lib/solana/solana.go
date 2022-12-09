@@ -42,11 +42,15 @@ func (pk *PublicKey) FindProgramAddress(seed string) (*PublicKey, uint8) {
 type SignerInfo AccountInfo
 
 type Ix interface {
-	Process() error
+	Process()
 }
 
 func GetIx() Ix {
 	return solFfi.get_ix()
+}
+
+func GetId() *PublicKey {
+	return solFfi.get_id()
 }
 
 func CommitLamports(account *AccountInfo) {

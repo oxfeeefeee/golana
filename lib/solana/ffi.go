@@ -12,6 +12,8 @@ type ffiSolana interface {
 	/// Get current solana Instruction
 	get_ix() Ix
 
+	get_id() *PublicKey
+
 	commit_lamports(index uint)
 
 	commit_data(index uint)

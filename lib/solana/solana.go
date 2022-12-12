@@ -35,12 +35,6 @@ type AccountInfo struct {
 	index uint
 }
 
-func (pk *PublicKey) FindProgramAddress(seed string) (*PublicKey, uint8) {
-	return solFfi.find_program_address(seed, pk)
-}
-
-type SignerInfo AccountInfo
-
 type Ix interface {
 	Process()
 }
@@ -73,4 +67,8 @@ func AbortOnError(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func FindProgramAddress(seed string, pk *PublicKey) (*PublicKey, uint8) {
+	return solFfi.find_program_address(seed, pk)
 }

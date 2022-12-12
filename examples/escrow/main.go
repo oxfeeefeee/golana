@@ -15,15 +15,15 @@ type EscrowAccountData struct {
 }
 
 type IxInit struct {
-	initializer                    *SignerInfo
-	mint                           *AccountInfo
-	vaultAccount                   *AccountInfo
-	initializerDepositTokenAccount *AccountInfo
-	initializerReceiveTokenAccount *AccountInfo
-	escrowAccount                  *AccountInfo
-	tokenProgram                   *AccountInfo
+	initializer_signer,
+	mint,
+	vaultAccount,
+	initializerDepositTokenAccount,
+	initializerReceiveTokenAccount,
+	escrowAccount,
+	tokenProgram *AccountInfo
 
-	escrowAccountDataInit *EscrowAccountData
+	escrowAccount_dataInit *EscrowAccountData
 
 	initializerAmount uint64
 	takerAmount       uint64
@@ -31,55 +31,55 @@ type IxInit struct {
 
 func (ix *IxInit) Process() {
 	data := new(EscrowAccountData)
-	data.initializerKey = ix.initializer.Key
+	data.initializerKey = ix.initializer_signer.Key
 	data.initializerDepositTokenAccount = ix.initializerDepositTokenAccount.Key
 	data.initializerReceiveTokenAccount = ix.initializerReceiveTokenAccount.Key
 	data.initializerAmount = ix.initializerAmount
 	data.takerAmount = ix.takerAmount
 	CommitData(ix.escrowAccount)
 
-	vaultAuthority, _ := GetId().FindProgramAddress(ESCROW_PDA_SEED)
+	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	AbortOnError(TokenSetAuthority(
 		ix.vaultAccount,
-		(*AccountInfo)(ix.initializer),
+		ix.initializer_signer,
 		vaultAuthority,
 		AuthAccountOwner, nil))
 	AbortOnError(TokenTransfer(
 		ix.initializerDepositTokenAccount,
 		ix.vaultAccount,
-		(*AccountInfo)(ix.initializer),
+		ix.initializer_signer,
 		ix.initializerAmount, nil))
 }
 
 type IxExchange struct {
-	taker                          *SignerInfo
-	takerDepositTokenAccount       *AccountInfo
-	takerReceiveTokenAccount       *AccountInfo
-	initializer                    *AccountInfo
-	initializerDepositTokenAccount *AccountInfo
-	initializerReceiveTokenAccount *AccountInfo
-	escrowAccount                  *AccountInfo
-	vaultAccount                   *AccountInfo
-	vaultAuthority                 *AccountInfo
-	tokenProgram                   *AccountInfo
+	taker_signer,
+	takerDepositTokenAccount,
+	takerReceiveTokenAccount,
+	initializer,
+	initializerDepositTokenAccount,
+	initializerReceiveTokenAccount,
+	escrowAccount,
+	vaultAccount,
+	vaultAuthority,
+	tokenProgram *AccountInfo
 
-	escrowAccountData *EscrowAccountData
+	escrowAccount_data *EscrowAccountData
 }
 
 func (ix *IxExchange) Process() {
-	_, bump := GetId().FindProgramAddress(ESCROW_PDA_SEED)
+	_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, bump}}
 
 	AbortOnError(TokenTransfer(
 		ix.takerDepositTokenAccount,
 		ix.initializerReceiveTokenAccount,
-		(*AccountInfo)(ix.taker),
-		ix.escrowAccountData.takerAmount, nil))
+		ix.taker_signer,
+		ix.escrowAccount_data.takerAmount, nil))
 	AbortOnError(TokenTransfer(
 		ix.vaultAccount,
 		ix.takerReceiveTokenAccount,
 		ix.vaultAuthority,
-		ix.escrowAccountData.initializerAmount,
+		ix.escrowAccount_data.initializerAmount,
 		authority_seeds))
 	AbortOnError(TokenCloseAccount(
 		ix.vaultAccount,
@@ -90,29 +90,29 @@ func (ix *IxExchange) Process() {
 }
 
 type IxCancel struct {
-	initializer                    *SignerInfo
-	vaultAccount                   *AccountInfo
-	vaultAuthority                 *AccountInfo
-	initializerDepositTokenAccount *AccountInfo
-	escrowAccount                  *AccountInfo
-	tokenProgram                   *AccountInfo
+	initializer_signer,
+	vaultAccount,
+	vaultAuthority,
+	initializerDepositTokenAccount,
+	escrowAccount,
+	tokenProgram *AccountInfo
 
-	escrowAccountData *EscrowAccountData
+	escrowAccount_data *EscrowAccountData
 }
 
 func (ix *IxCancel) Process() {
-	_, bump := GetId().FindProgramAddress(ESCROW_PDA_SEED)
+	_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, bump}}
 
 	AbortOnError(TokenTransfer(
 		ix.vaultAccount,
 		ix.initializerDepositTokenAccount,
 		ix.vaultAuthority,
-		ix.escrowAccountData.initializerAmount,
+		ix.escrowAccount_data.initializerAmount,
 		authority_seeds))
 	AbortOnError(TokenCloseAccount(
 		ix.vaultAccount,
-		(*AccountInfo)(ix.initializer),
+		ix.initializer_signer,
 		ix.vaultAuthority,
 		authority_seeds))
 

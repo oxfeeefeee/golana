@@ -1,10 +1,11 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { PublicKey, SystemProgram, Transaction, Connection, Commitment, ComputeBudgetProgram } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, Connection, Commitment, ComputeBudgetProgram, AccountMeta } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
 import { Loader } from "../target/types/loader";
 import { assert } from "chai";
 import { serialize, BinaryWriter } from 'borsh';
+import { sha256 } from 'js-sha256';
 
 describe("loader", async () => {
     const provider = anchor.AnchorProvider.local();
@@ -25,7 +26,7 @@ describe("loader", async () => {
     it("Create", async () => {
         // Airdropping tokens to author.
         const latestBlockhash = await provider.connection.getLatestBlockhash();
-        const sig = await provider.connection.requestAirdrop(author.publicKey, 1000000000);
+        const sig = await provider.connection.requestAirdrop(author.publicKey, 10000000000);
         await provider.connection.confirmTransaction(
             { signature: sig, ...latestBlockhash },
             "processed"
@@ -40,8 +41,8 @@ describe("loader", async () => {
                         newAccountPubkey: bytecodePK,
                         basePubkey: author.publicKey,
                         seed: seed,
-                        lamports: 100000000,
-                        space: 8 * 1024,
+                        lamports: 1000000000,
+                        space: 16 * 1024,
                         programId: golanaProgram.programId,
                     })
                 );
@@ -113,21 +114,6 @@ describe("loader", async () => {
         assert.ok(bcAccount.finalized);
     });
 
-    let exec = async (args: Uint8Array) => {
-        await golanaProgram.methods.golExecute('IxInit', args).accounts({
-            authority: author.publicKey,
-            bytecode: bytecodePK,
-            extra: bytecodePK,
-        }).preInstructions(
-            [
-                ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
-        ).signers([author]).rpc({ skipPreflight: true });
-
-        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
-        assert.ok(bcAccount.finalized);
-    }
-
     // class Assignable {
     //     constructor(properties) {
     //         Object.keys(properties).map((key) => {
@@ -143,15 +129,11 @@ describe("loader", async () => {
     // const buffer = serialize(schema, value);
     // console.log(buffer);
 
-    let writer = new BinaryWriter();
-    writer.writeString("escrow dsfew");
-    writer.writeU32(123);
-    const buf = writer.toArray();
-
-    // const buffer = serialize(null, "escrow dsfew");// Buffer.from(anchor.utils.bytes.utf8.encode("escrow dsfew"));
-    // console.log(buffer);
-
-    it("Execute", async () => exec(buf));
+    // let writer = new BinaryWriter();
+    // writer.writeString("escrow dsfew");
+    // writer.writeU32(123);
+    // const buf = writer.toArray();
+    // it("Execute", async () => exec([], buf));
 
 
 
@@ -260,20 +242,79 @@ describe("loader", async () => {
     ////////////////////////////////////////////////////////////////////////
 
 
+    let exec = async (accounts: Array<AccountMeta>, args: Uint8Array, signers: Array<anchor.web3.Signer>) => {
+        await golanaProgram.methods.golExecute('IxInit', args).accounts({
+            authority: author.publicKey,
+            bytecode: bytecodePK,
+        }).remainingAccounts(accounts).preInstructions(
+            [
+                ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
+        ).signers(signers).rpc({ skipPreflight: true });
+
+        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
+        assert.ok(bcAccount.finalized);
+    }
+
+
     ////////////////////////////////////////////////////////////////////////
     it("Initialize escrow", async () => {
         const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
-            [Buffer.from(anchor.utils.bytes.utf8.encode(bytecodePK.toBase58() + "/token-seed"))],
+            [new Uint8Array(sha256.arrayBuffer(bytecodePK.toBase58() + "token-seed"))],
             golanaProgram.programId
         );
         vault_account_pda = _vault_account_pda;
         vault_account_bump = _vault_account_bump;
 
         const [_vault_authority_pda, _vault_authority_bump] = await PublicKey.findProgramAddress(
-            [Buffer.from(anchor.utils.bytes.utf8.encode(bytecodePK.toBase58() + "/escrow"))],
+            [new Uint8Array(sha256.arrayBuffer(bytecodePK.toBase58() + "escrow"))],
             golanaProgram.programId
         );
         vault_authority_pda = _vault_authority_pda;
+
+        const accounts = [
+            {
+                "pubkey": initializerMainAccount.publicKey,
+                "isWritable": false,
+                "isSigner": true
+            },
+            {
+                "pubkey": mintA,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
+                "pubkey": vault_account_pda,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
+                "pubkey": initializerTokenAccountA,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
+                "pubkey": initializerTokenAccountB,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
+                "pubkey": escrowAccount.publicKey,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": TOKEN_PROGRAM_ID,
+                "isWritable": false,
+                "isSigner": false
+            }
+        ];
+
+        let writer = new BinaryWriter();
+        writer.writeU64(initializerAmount);
+        writer.writeU64(takerAmount);
+        const buf = writer.toArray();
+        await exec(accounts, buf, [author, initializerMainAccount]);
     })
 
 });

@@ -8,6 +8,7 @@ use solana_program::account_info::AccountInfo;
 use std::cell::RefCell;
 
 pub fn run(
+    key: &Pubkey,
     bin: &Vec<u8>,
     meta_bin: &Vec<u8>,
     accounts: &[AccountInfo],
@@ -16,7 +17,7 @@ pub fn run(
 ) -> Result<()> {
     let bc = Bytecode::try_from_slice(bin).unwrap();
     let metas = TxMeta::try_from_slice(meta_bin).unwrap();
-    let ix = Instruction::new(&metas, accounts, id, &args)?;
+    let ix = Instruction::new(key, &metas, accounts, id, &args)?;
     let p = std::ptr::addr_of!(ix) as usize;
 
     let mut ffi = goscript_vm::FfiFactory::with_user_data(p);
@@ -28,6 +29,7 @@ pub fn run(
 }
 
 pub(crate) struct Instruction<'a, 'info> {
+    pub gos_program_id: &'a Pubkey,
     pub accounts: &'a [AccountInfo<'info>],
     pub args: &'a Vec<u8>,
     pub ix_meta: &'a IxMeta,
@@ -39,6 +41,7 @@ where
     'info: 'a,
 {
     fn new(
+        gos_program_id: &'a Pubkey,
         tx_meta: &'a TxMeta,
         accounts: &'a [AccountInfo<'info>],
         id: &'a str,
@@ -54,6 +57,7 @@ where
         }
 
         Ok(Instruction {
+            gos_program_id,
             accounts,
             args,
             ix_meta,

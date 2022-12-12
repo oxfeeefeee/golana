@@ -14,9 +14,9 @@ pub enum AccessMode {
 impl AccessMode {
     pub fn try_with_name(name: &str, index: usize) -> Option<AccessMode> {
         match name {
-            "Data" => Some(Self::ReadOnly),
-            "DataInit" => Some(Self::Initialize(index)),
-            "DataMut" => Some(Self::Mutable(index)),
+            "_data" => Some(Self::ReadOnly),
+            "_dataInit" => Some(Self::Initialize(index)),
+            "_dataMut" => Some(Self::Mutable(index)),
             _ => None,
         }
     }
@@ -55,7 +55,6 @@ impl IxMeta {
         name: &str,
         gos_meta: types::Meta,
         account: &types::Meta,
-        signer: &types::Meta,
         metas: &types::MetadataObjs,
     ) -> Result<IxMeta> {
         let (methods, inner_meta) = metas[gos_meta.key].as_named();
@@ -78,13 +77,15 @@ impl IxMeta {
         // First, get all AccountInfo
         while i < fields.len() {
             let meta = &fields[i].meta;
-            if meta.key == account.key || meta.key == signer.key {
+            let name = &fields[i].name;
+            if meta.key == account.key {
                 if meta.ptr_depth != 1 {
                     return Err(error!(GolError::NonPointerAccountInfo));
                 }
                 accounts.push((
                     AccountMeta {
-                        is_signer: meta == signer,
+                        // todo: proper parsing
+                        is_signer: name.ends_with("_signer"),
                         access_mode: AccessMode::None,
                     },
                     &fields[i].name,
@@ -155,8 +156,7 @@ pub struct TxMeta {
 }
 
 pub fn check(bc: &Bytecode) -> Result<TxMeta> {
-    let (account_info_meta, signer_info_meta) =
-        get_account_info_metas(bc).ok_or(error!(GolError::MetaNotFound))?;
+    let account_info_meta = get_account_info_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
     let main_pkg = &bc.objects.packages[bc.main_pkg];
     let ix_details: Vec<(&String, types::Meta)> = main_pkg
         .member_indices()
@@ -173,20 +173,12 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
 
     let instructions = ix_details
         .into_iter()
-        .map(|(name, meta)| {
-            IxMeta::new(
-                name,
-                meta,
-                &account_info_meta,
-                &signer_info_meta,
-                &bc.objects.metas,
-            )
-        })
+        .map(|(name, meta)| IxMeta::new(name, meta, &account_info_meta, &bc.objects.metas))
         .collect::<Result<Vec<IxMeta>>>()?;
     Ok(TxMeta { instructions })
 }
 
-fn get_account_info_metas(bc: &Bytecode) -> Option<(types::Meta, types::Meta)> {
+fn get_account_info_meta(bc: &Bytecode) -> Option<types::Meta> {
     let key = bc
         .objects
         .packages
@@ -196,11 +188,8 @@ fn get_account_info_metas(bc: &Bytecode) -> Option<(types::Meta, types::Meta)> {
         .map(|(i, _)| i.into())?;
     let pkg = &bc.objects.packages[key];
     let account = pkg.member(*pkg.member_index("AccountInfo")?);
-    let signer = pkg.member(*pkg.member_index("SignerInfo")?);
-    match (account.typ(), signer.typ()) {
-        (types::ValueType::Metadata, types::ValueType::Metadata) => {
-            Some((account.as_metadata().clone(), signer.as_metadata().clone()))
-        }
+    match account.typ() {
+        types::ValueType::Metadata => Some(account.as_metadata().clone()),
         _ => None,
     }
 }

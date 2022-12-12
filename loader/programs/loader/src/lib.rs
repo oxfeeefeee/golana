@@ -51,6 +51,7 @@ pub mod loader {
 
     pub fn gol_execute(ctx: Context<GolExecute>, id: String, args: Vec<u8>) -> Result<()> {
         crate::goscript::run(
+            &ctx.accounts.bytecode.key(),
             &ctx.accounts.bytecode.content,
             &ctx.accounts.bytecode.meta,
             ctx.remaining_accounts,

@@ -25,6 +25,11 @@ impl SolanaFfi {
         Self::get_instruction(ctx).get_ix(ctx)
     }
 
+    fn ffi_get_id(ctx: &FfiCtx) -> GosValue {
+        let ix = Self::get_instruction(ctx);
+        Self::make_pub_key_ptr(ctx, ix.gos_program_id.clone())
+    }
+
     fn ffi_commit_lamports(ctx: &FfiCtx, index: usize) {
         Self::get_instruction(ctx)
             .write_back_data(index..index + 1, true, false)
@@ -58,7 +63,10 @@ impl SolanaFfi {
         let program_id =
             Self::get_pub_key(ctx, &program).expect("ffi_find_program_address: bad program id");
         let seed_str = seed.as_string().as_str();
-        let (pk, bump) = Pubkey::find_program_address(&[seed_str.as_bytes()], &program_id);
+        let mut full_seed = program_id.to_bytes().to_vec();
+        full_seed.append(&mut seed_str.as_bytes().to_owned());
+
+        let (pk, bump) = Pubkey::find_program_address(&[&full_seed[..]], &crate::ID);
         (Self::make_pub_key_ptr(ctx, pk), bump)
     }
 

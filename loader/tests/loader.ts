@@ -256,26 +256,29 @@ describe("loader", async () => {
         assert.ok(bcAccount.finalized);
     }
 
+    let findAddr = async (seed) => {
+        let fullSeed = Buffer.concat([bytecodePK.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode(seed))]);
+        let result = await PublicKey.findProgramAddress(
+            [new Uint8Array(sha256.arrayBuffer(fullSeed))],
+            golanaProgram.programId
+        );
+        return result
+    }
+
 
     ////////////////////////////////////////////////////////////////////////
     it("Initialize escrow", async () => {
-        const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
-            [new Uint8Array(sha256.arrayBuffer(bytecodePK.toBase58() + "token-seed"))],
-            golanaProgram.programId
-        );
+        const [_vault_account_pda, _vault_account_bump] = await findAddr("token-seed");
         vault_account_pda = _vault_account_pda;
         vault_account_bump = _vault_account_bump;
 
-        const [_vault_authority_pda, _vault_authority_bump] = await PublicKey.findProgramAddress(
-            [new Uint8Array(sha256.arrayBuffer(bytecodePK.toBase58() + "escrow"))],
-            golanaProgram.programId
-        );
+        const [_vault_authority_pda, _vault_authority_bump] = await findAddr("escrow");
         vault_authority_pda = _vault_authority_pda;
 
         const accounts = [
             {
                 "pubkey": initializerMainAccount.publicKey,
-                "isWritable": false,
+                "isWritable": true,
                 "isSigner": true
             },
             {
@@ -285,12 +288,12 @@ describe("loader", async () => {
             },
             {
                 "pubkey": vault_account_pda,
-                "isWritable": false,
+                "isWritable": true,
                 "isSigner": false
             },
             {
                 "pubkey": initializerTokenAccountA,
-                "isWritable": false,
+                "isWritable": true,
                 "isSigner": false
             },
             {
@@ -304,13 +307,30 @@ describe("loader", async () => {
                 "isSigner": false
             },
             {
+                "pubkey": anchor.web3.SystemProgram.programId,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
+                "pubkey": anchor.web3.SYSVAR_RENT_PUBKEY,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
                 "pubkey": TOKEN_PROGRAM_ID,
                 "isWritable": false,
                 "isSigner": false
             }
         ];
 
+        console.log(initializerMainAccount.publicKey.toString());
+        console.log(vault_account_pda.toString(), vault_account_bump);
+        console.log(vault_authority_pda.toString());
+        console.log(initializerTokenAccountA.toString());
+        console.log(escrowAccount.publicKey.toString());
+
         let writer = new BinaryWriter();
+        writer.writeU8(vault_account_bump);
         writer.writeU64(initializerAmount);
         writer.writeU64(takerAmount);
         const buf = writer.toArray();

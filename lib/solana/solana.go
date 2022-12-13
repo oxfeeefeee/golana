@@ -72,3 +72,8 @@ func AbortOnError(e error) {
 func FindProgramAddress(seed string, pk *PublicKey) (*PublicKey, uint8) {
 	return solFfi.find_program_address(seed, pk)
 }
+
+func CreateAccount(from, to *AccountInfo, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) error {
+	p := solFfi.create_account(from.index, to.index, owner, lamports, space, signerSeeds)
+	return NewSolanaError(p)
+}

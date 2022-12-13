@@ -5,6 +5,7 @@ import (
 )
 
 const ESCROW_PDA_SEED = "escrow"
+const VAULT_PDA_SEED = "token-seed"
 
 type EscrowAccountData struct {
 	initializerKey                 *PublicKey
@@ -21,10 +22,13 @@ type IxInit struct {
 	initializerDepositTokenAccount,
 	initializerReceiveTokenAccount,
 	escrowAccount,
+	systemProgram,
+	rent,
 	tokenProgram *AccountInfo
 
 	escrowAccount_dataInit *EscrowAccountData
 
+	vaultAccountBump  uint8
 	initializerAmount uint64
 	takerAmount       uint64
 }
@@ -36,9 +40,19 @@ func (ix *IxInit) Process() {
 	data.initializerReceiveTokenAccount = ix.initializerReceiveTokenAccount.Key
 	data.initializerAmount = ix.initializerAmount
 	data.takerAmount = ix.takerAmount
+	ix.escrowAccount_dataInit = data
 	CommitData(ix.escrowAccount)
 
+	vault_seeds := []SeedBump{{VAULT_PDA_SEED, ix.vaultAccountBump}}
 	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())
+	AbortOnError(TokenCreateAndInitAccount(
+		ix.initializer_signer,
+		ix.vaultAccount,
+		ix.tokenProgram.Key,
+		ix.mint,
+		ix.initializer_signer,
+		ix.rent,
+		vault_seeds))
 	AbortOnError(TokenSetAuthority(
 		ix.vaultAccount,
 		ix.initializer_signer,

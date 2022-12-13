@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use golana::*;
 use goscript_vm::types::*;
 use goscript_vm::*;
-use solana_program::{self, account_info::AccountInfo, pubkey::Pubkey};
+use solana_program::{self, account_info::AccountInfo, program_pack::Pack, pubkey::Pubkey};
 use spl_token::{self, instruction::AuthorityType};
 use std::rc::Rc;
 
@@ -32,25 +32,25 @@ impl SolanaFfi {
 
     fn ffi_commit_lamports(ctx: &FfiCtx, index: usize) {
         Self::get_instruction(ctx)
-            .write_back_data(index..index + 1, true, false)
+            .write_back_data(ctx, index..index + 1, true, false)
             .unwrap();
     }
 
     fn ffi_commit_data(ctx: &FfiCtx, index: usize) {
         Self::get_instruction(ctx)
-            .write_back_data(index..index + 1, false, true)
+            .write_back_data(ctx, index..index + 1, false, true)
             .unwrap();
     }
 
     fn ffi_commit_lamports_and_data(ctx: &FfiCtx, index: usize) {
         Self::get_instruction(ctx)
-            .write_back_data(index..index + 1, true, true)
+            .write_back_data(ctx, index..index + 1, true, true)
             .unwrap();
     }
 
     fn ffi_commit_everything(ctx: &FfiCtx) {
         let ix = Self::get_instruction(ctx);
-        ix.write_back_data(0..ix.accounts.len(), true, true)
+        ix.write_back_data(ctx, 0..ix.accounts.len(), true, true)
             .unwrap();
     }
 
@@ -65,9 +65,107 @@ impl SolanaFfi {
         let seed_str = seed.as_string().as_str();
         let mut full_seed = program_id.to_bytes().to_vec();
         full_seed.append(&mut seed_str.as_bytes().to_owned());
+        let hashed = solana_program::hash::hash(&full_seed).to_bytes();
 
-        let (pk, bump) = Pubkey::find_program_address(&[&full_seed[..]], &crate::ID);
+        let (pk, bump) = Pubkey::find_program_address(&[&hashed[..]], &crate::ID);
         (Self::make_pub_key_ptr(ctx, pk), bump)
+    }
+
+    fn ffi_create_account(
+        ctx: &FfiCtx,
+        from_index: usize,
+        to_index: usize,
+        owner: GosValue,
+        lamports: u64,
+        space: u64,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let inst = Self::get_instruction(ctx);
+        let from = inst.accounts[from_index].clone();
+        let to = inst.accounts[to_index].clone();
+        let owner_pk = Self::get_pub_key(ctx, &owner).expect("ffi_create_account: bad owner");
+        let result = Self::create_account(from, to, &owner_pk, lamports, space, signer_seeds);
+        Self::make_err_unsafe_ptr(result)
+    }
+
+    fn ffi_token_init_account(
+        ctx: &FfiCtx,
+        account_index: usize,
+        mint_index: usize,
+        auth_index: usize,
+        rent_index: usize,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let inst = Self::get_instruction(ctx);
+        let account = inst.accounts[account_index].clone();
+        let mint = inst.accounts[mint_index].clone();
+        let auth = inst.accounts[auth_index].clone();
+        let rent = inst.accounts[rent_index].clone();
+        let result = Self::token_init_account(account, mint, auth, rent, signer_seeds);
+        Self::make_err_unsafe_ptr(result)
+    }
+
+    fn ffi_token_create_and_init_account(
+        ctx: &FfiCtx,
+        from_index: usize,
+        to_index: usize,
+        token_program: GosValue,
+        mint_index: usize,
+        auth_index: usize,
+        rent_index: usize,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let inst = Self::get_instruction(ctx);
+        let from = inst.accounts[from_index].clone();
+        let to = inst.accounts[to_index].clone();
+        let owner = Self::get_pub_key(ctx, &token_program)
+            .expect("ffi_token_create_and_init_account: bad token program id");
+        let mint = inst.accounts[mint_index].clone();
+        let auth = inst.accounts[auth_index].clone();
+        let rent = inst.accounts[rent_index].clone();
+        let result: anyhow::Result<()> = (move || {
+            let space = spl_token::state::Account::LEN as u64;
+            let lamports = 0; //todo
+            Self::create_account(
+                from,
+                to.clone(),
+                &owner,
+                lamports,
+                space,
+                signer_seeds.clone(),
+            )?;
+            Self::token_init_account(to, mint, auth, rent, signer_seeds)
+        })();
+        Self::make_err_unsafe_ptr(result)
+    }
+
+    fn ffi_token_close_account(
+        ctx: &FfiCtx,
+        account_index: usize,
+        dest_index: usize,
+        auth_index: usize,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let result: anyhow::Result<()> = (move || {
+            let inst = Self::get_instruction(ctx);
+            let account = &inst.accounts[account_index];
+            let dest = &inst.accounts[dest_index];
+            let auth = &inst.accounts[auth_index];
+            let ix = spl_token::instruction::close_account(
+                &spl_token::ID,
+                account.key,
+                dest.key,
+                auth.key,
+                &[], // TODO: support multisig
+            )?;
+            solana_program::program::invoke_signed(
+                &ix,
+                &[account.clone(), dest.clone(), auth.clone()],
+                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+            )
+            .map_err(Into::into)
+        })();
+        Self::make_err_unsafe_ptr(result)
     }
 
     fn ffi_token_set_authority(
@@ -135,33 +233,44 @@ impl SolanaFfi {
         Self::make_err_unsafe_ptr(result)
     }
 
-    fn ffi_token_close_account(
-        ctx: &FfiCtx,
-        account_index: usize,
-        dest_index: usize,
-        auth_index: usize,
+    fn create_account<'a>(
+        from: AccountInfo<'a>,
+        to: AccountInfo<'a>,
+        owner: &Pubkey,
+        lamports: u64,
+        space: u64,
         signer_seeds: GosValue,
-    ) -> GosValue {
-        let result: anyhow::Result<()> = (move || {
-            let inst = Self::get_instruction(ctx);
-            let account = &inst.accounts[account_index];
-            let dest = &inst.accounts[dest_index];
-            let auth = &inst.accounts[auth_index];
-            let ix = spl_token::instruction::close_account(
-                &spl_token::ID,
-                account.key,
-                dest.key,
-                auth.key,
-                &[], // TODO: support multisig
-            )?;
-            solana_program::program::invoke_signed(
-                &ix,
-                &[account.clone(), dest.clone(), auth.clone()],
-                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
-            )
-            .map_err(Into::into)
-        })();
-        Self::make_err_unsafe_ptr(result)
+    ) -> anyhow::Result<()> {
+        let ix = solana_program::system_instruction::create_account(
+            from.key, to.key, lamports, space, owner,
+        );
+        solana_program::program::invoke_signed(
+            &ix,
+            &[from, to],
+            &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+        )
+        .map_err(Into::into)
+    }
+
+    fn token_init_account<'a>(
+        account: AccountInfo<'a>,
+        mint: AccountInfo<'a>,
+        auth: AccountInfo<'a>,
+        rent: AccountInfo<'a>,
+        signer_seeds: GosValue,
+    ) -> anyhow::Result<()> {
+        let ix = spl_token::instruction::initialize_account(
+            &spl_token::ID,
+            account.key,
+            mint.key,
+            auth.key,
+        )?;
+        solana_program::program::invoke_signed(
+            &ix,
+            &[account, mint, auth, rent],
+            &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+        )
+        .map_err(Into::into)
     }
 
     fn into_authority_type(val: u8) -> Result<AuthorityType> {

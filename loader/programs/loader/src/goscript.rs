@@ -79,22 +79,33 @@ where
 
     pub(crate) fn write_back_data(
         &self,
+        ctx: &FfiCtx,
         indices: std::ops::Range<usize>,
         lamports: bool,
         data: bool,
     ) -> Result<()> {
         let borrowed = self.gos_ix.borrow();
-        let gos_ix = borrowed.as_ref().unwrap();
+        let gos_ix = borrowed
+            .as_ref()
+            .unwrap()
+            .as_non_nil_interface()
+            .unwrap()
+            .underlying_value()
+            .unwrap();
         let ix_fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
         for index in indices {
-            let account_info_fields: &Vec<GosValue> =
-                &ix_fields[index].as_struct().0.borrow_fields();
+            let account_info = ix_fields[index]
+                .as_non_nil_pointer()
+                .unwrap()
+                .deref(&ctx.stack, &ctx.vm_objs.packages)
+                .unwrap();
+            let account_info_fields: &Vec<GosValue> = &account_info.as_struct().0.borrow_fields();
             if lamports {
                 let val = *account_info_fields[1].as_uint64();
                 **self.accounts[index].lamports.borrow_mut() = val;
             }
             if data {
-                let data_fields = &account_info_fields[self.accounts.len()..];
+                let data_fields = &ix_fields[self.accounts.len()..];
                 let account_meta = &self.ix_meta.accounts[index];
                 if let Some(data_index) = account_meta.access_mode.get_data_index() {
                     let mut buf: &mut [u8] = &mut self.accounts[index].data.borrow_mut();
@@ -112,9 +123,9 @@ where
             if acc_meta.is_signer != account.is_signer {
                 return Err(error!(GolError::RtCheckSigner));
             }
-            if acc_meta.access_mode.is_writable() != account.is_writable {
-                return Err(error!(GolError::RtCheckMutable));
-            }
+            // if acc_meta.access_mode.is_writable() != account.is_writable {
+            //     return Err(error!(GolError::RtCheckMutable));
+            // }
             fields.push(solana::SolanaFfi::make_account_info_ptr(ctx, account, i));
         }
         for (i, data_meta) in self.ix_meta.accounts_data.iter() {

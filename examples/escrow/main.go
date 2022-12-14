@@ -8,9 +8,9 @@ const ESCROW_PDA_SEED = "escrow"
 const VAULT_PDA_SEED = "token-seed"
 
 type EscrowAccountData struct {
-	initializerKey                 *PublicKey
-	initializerDepositTokenAccount *PublicKey
-	initializerReceiveTokenAccount *PublicKey
+	initializerKey                 PublicKey
+	initializerDepositTokenAccount PublicKey
+	initializerReceiveTokenAccount PublicKey
 	initializerAmount              uint64
 	takerAmount                    uint64
 }
@@ -35,9 +35,9 @@ type IxInit struct {
 
 func (ix *IxInit) Process() {
 	data := new(EscrowAccountData)
-	data.initializerKey = ix.initializer_signer.Key
-	data.initializerDepositTokenAccount = ix.initializerDepositTokenAccount.Key
-	data.initializerReceiveTokenAccount = ix.initializerReceiveTokenAccount.Key
+	data.initializerKey = *ix.initializer_signer.Key
+	data.initializerDepositTokenAccount = *ix.initializerDepositTokenAccount.Key
+	data.initializerReceiveTokenAccount = *ix.initializerReceiveTokenAccount.Key
 	data.initializerAmount = ix.initializerAmount
 	data.takerAmount = ix.takerAmount
 	ix.escrowAccount_dataInit = data
@@ -81,6 +81,9 @@ type IxExchange struct {
 }
 
 func (ix *IxExchange) Process() {
+	//fmt2.Println(ix.escrowAccount_data.initializerAmount)
+	//fmt2.Println(ix.escrowAccount_data.takerAmount)
+
 	_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, bump}}
 

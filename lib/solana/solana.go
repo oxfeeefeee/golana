@@ -1,5 +1,9 @@
 package solana
 
+import (
+	"unsafe"
+)
+
 type PublicKey [32]uint8
 
 type SeedBump struct {
@@ -76,4 +80,19 @@ func FindProgramAddress(seed string, pk *PublicKey) (*PublicKey, uint8) {
 func CreateAccount(from, to *AccountInfo, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) error {
 	p := solFfi.create_account(from.index, to.index, owner, lamports, space, signerSeeds)
 	return NewSolanaError(p)
+}
+
+type SolanaError struct {
+	ptr unsafe.Pointer
+}
+
+func NewSolanaError(ptr unsafe.Pointer) error {
+	if ptr == nil {
+		return nil
+	}
+	return &SolanaError{ptr}
+}
+
+func (e *SolanaError) Error() string {
+	return solFfi.error_string(e.ptr)
 }

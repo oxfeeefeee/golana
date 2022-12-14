@@ -7,14 +7,14 @@ use goscript_vm::*;
 pub enum AccessMode {
     None,
     Initialize(usize),
-    ReadOnly,
+    ReadOnly(usize),
     Mutable(usize),
 }
 
 impl AccessMode {
     pub fn try_with_name(name: &str, index: usize) -> Option<AccessMode> {
         match name {
-            "_data" => Some(Self::ReadOnly),
+            "_data" => Some(Self::ReadOnly(index)),
             "_dataInit" => Some(Self::Initialize(index)),
             "_dataMut" => Some(Self::Mutable(index)),
             _ => None,
@@ -27,7 +27,7 @@ impl AccessMode {
 
     pub fn get_data_index(&self) -> Option<usize> {
         match self {
-            Self::Initialize(i) | Self::Mutable(i) => Some(*i),
+            Self::Initialize(i) | Self::ReadOnly(i) | Self::Mutable(i) => Some(*i),
             _ => None,
         }
     }
@@ -111,7 +111,10 @@ impl IxMeta {
                                 return Err(error!(GolError::DuplicatedDataDeclare));
                             }
                             acc.0.access_mode = mode;
-                            accounts_data.push((index, field.meta));
+                            if field.meta.ptr_depth != 1 {
+                                return Err(error!(GolError::NonPointerDataDeclare));
+                            }
+                            accounts_data.push((index, field.meta.unptr_to()));
                             found = true;
                         }
                         break;

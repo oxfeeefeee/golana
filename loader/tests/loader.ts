@@ -42,7 +42,7 @@ describe("loader", async () => {
                         basePubkey: author.publicKey,
                         seed: seed,
                         lamports: 1000000000,
-                        space: 16 * 1024,
+                        space: 32 * 1024,
                         programId: golanaProgram.programId,
                     })
                 );
@@ -179,11 +179,18 @@ describe("loader", async () => {
                         fromPubkey: payer.publicKey,
                         toPubkey: takerMainAccount.publicKey,
                         lamports: 100000000,
+                    }),
+                    anchor.web3.SystemProgram.createAccount({
+                        fromPubkey: payer.publicKey,
+                        newAccountPubkey: escrowAccount.publicKey,
+                        lamports: 100000000,
+                        space: 512,
+                        programId: golanaProgram.programId,
                     })
                 );
                 return tx;
             })(),
-            [payer],
+            [payer, escrowAccount],
             { skipPreflight: true },
         );
 
@@ -242,8 +249,8 @@ describe("loader", async () => {
     ////////////////////////////////////////////////////////////////////////
 
 
-    let exec = async (accounts: Array<AccountMeta>, args: Uint8Array, signers: Array<anchor.web3.Signer>) => {
-        await golanaProgram.methods.golExecute('IxInit', args).accounts({
+    let exec = async (ixName: string, accounts: Array<AccountMeta>, args: Uint8Array, signers: Array<anchor.web3.Signer>) => {
+        await golanaProgram.methods.golExecute(ixName, args).accounts({
             authority: author.publicKey,
             bytecode: bytecodePK,
         }).remainingAccounts(accounts).preInstructions(
@@ -274,6 +281,7 @@ describe("loader", async () => {
 
         const [_vault_authority_pda, _vault_authority_bump] = await findAddr("escrow");
         vault_authority_pda = _vault_authority_pda;
+        console.log(_vault_authority_bump);
 
         const accounts = [
             {
@@ -334,7 +342,71 @@ describe("loader", async () => {
         writer.writeU64(initializerAmount);
         writer.writeU64(takerAmount);
         const buf = writer.toArray();
-        await exec(accounts, buf, [author, initializerMainAccount]);
+        await exec('IxInit', accounts, buf, [author, initializerMainAccount]);
+
+        let _vault = await getAccount(provider.connection, vault_account_pda);
+        console.log(_vault.owner.toString());
+        // Check that the new owner is the PDA.
+        assert.ok(_vault.owner.equals(vault_authority_pda));
+    })
+
+    it("Exchange", async () => {
+        const accounts = [
+            {
+                "pubkey": takerMainAccount.publicKey,
+                "isWritable": false,
+                "isSigner": true
+            },
+            {
+                "pubkey": takerTokenAccountB,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": takerTokenAccountA,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": initializerMainAccount.publicKey,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": initializerTokenAccountA,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": initializerTokenAccountB,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": escrowAccount.publicKey,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": vault_account_pda,
+                "isWritable": true,
+                "isSigner": false
+            },
+            {
+                "pubkey": vault_authority_pda,
+                "isWritable": false,
+                "isSigner": false
+            },
+            {
+                "pubkey": TOKEN_PROGRAM_ID,
+                "isWritable": false,
+                "isSigner": false
+            }
+        ];
+
+        let writer = new BinaryWriter();
+        const buf = writer.toArray();
+        await exec("IxExchange", accounts, buf, [author, takerMainAccount]);
     })
 
 });

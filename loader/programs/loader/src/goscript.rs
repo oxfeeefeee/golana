@@ -94,11 +94,7 @@ where
             .unwrap();
         let ix_fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
         for index in indices {
-            let account_info = ix_fields[index]
-                .as_non_nil_pointer()
-                .unwrap()
-                .deref(&ctx.stack, &ctx.vm_objs.packages)
-                .unwrap();
+            let account_info = ctx.deref_pointer(&ix_fields[index]).unwrap();
             let account_info_fields: &Vec<GosValue> = &account_info.as_struct().0.borrow_fields();
             if lamports {
                 let val = *account_info_fields[1].as_uint64();
@@ -109,7 +105,10 @@ where
                 let account_meta = &self.ix_meta.accounts[index];
                 if let Some(data_index) = account_meta.access_mode.get_data_index() {
                     let mut buf: &mut [u8] = &mut self.accounts[index].data.borrow_mut();
-                    GosValue::serialize_wo_type(&data_fields[data_index], &mut buf)?;
+                    let data_obj = ctx.deref_pointer(&data_fields[data_index]).unwrap();
+                    msg!(&buf.len().to_string());
+                    GosValue::serialize_wo_type(&data_obj, &mut buf)?;
+                    msg!(&buf.len().to_string());
                 }
             }
         }
@@ -136,7 +135,7 @@ where
                     GosValue::deserialize_wo_type(data_meta, &ctx.vm_objs.metas, &mut buf)?
                 }
             };
-            fields.push(data);
+            fields.push(FfiCtx::new_pointer(data));
         }
         let mut buf: &[u8] = &self.args;
         for arg_meta in self.ix_meta.args.iter() {

@@ -7,12 +7,6 @@ use solana_program::{self, account_info::AccountInfo, program_pack::Pack, pubkey
 use spl_token::{self, instruction::AuthorityType};
 use std::rc::Rc;
 
-macro_rules! ref_seeds {
-    ($seeds_vec: expr) => {{
-        $seeds_vec.iter().map(|x| &x[..]).collect::<Vec<&[&[u8]]>>()
-    }};
-}
-
 #[derive(UnsafePtr)]
 pub struct Error(anyhow::Error);
 
@@ -39,19 +33,19 @@ impl SolanaFfi {
     fn ffi_commit_data(ctx: &FfiCtx, index: usize) {
         Self::get_instruction(ctx)
             .write_back_data(ctx, index..index + 1, false, true)
-            .unwrap();
+            .expect("commit data error!");
     }
 
     fn ffi_commit_lamports_and_data(ctx: &FfiCtx, index: usize) {
         Self::get_instruction(ctx)
             .write_back_data(ctx, index..index + 1, true, true)
-            .unwrap();
+            .expect("commit lamports and data error!");
     }
 
     fn ffi_commit_everything(ctx: &FfiCtx) {
         let ix = Self::get_instruction(ctx);
         ix.write_back_data(ctx, 0..ix.accounts.len(), true, true)
-            .unwrap();
+            .expect("commit everything error!");
     }
 
     fn ffi_error_string(e: GosValue) -> RuntimeResult<String> {
@@ -62,11 +56,7 @@ impl SolanaFfi {
     fn ffi_find_program_address(ctx: &FfiCtx, seed: GosValue, program: GosValue) -> (GosValue, u8) {
         let program_id =
             Self::get_pub_key(ctx, &program).expect("ffi_find_program_address: bad program id");
-        let seed_str = seed.as_string().as_str();
-        let mut full_seed = program_id.to_bytes().to_vec();
-        full_seed.append(&mut seed_str.as_bytes().to_owned());
-        let hashed = solana_program::hash::hash(&full_seed).to_bytes();
-
+        let hashed = Self::get_seed_hash(seed.as_string().as_str().as_bytes(), &program_id);
         let (pk, bump) = Pubkey::find_program_address(&[&hashed[..]], &crate::ID);
         (Self::make_pub_key_ptr(ctx, pk), bump)
     }
@@ -84,7 +74,10 @@ impl SolanaFfi {
         let from = inst.accounts[from_index].clone();
         let to = inst.accounts[to_index].clone();
         let owner_pk = Self::get_pub_key(ctx, &owner).expect("ffi_create_account: bad owner");
-        let result = Self::create_account(from, to, &owner_pk, lamports, space, signer_seeds);
+        let ix = solana_program::system_instruction::create_account(
+            from.key, to.key, lamports, space, &owner_pk,
+        );
+        let result = Self::invoke_signed(&ix, &[from, to], signer_seeds, inst.gos_program_id);
         Self::make_err_unsafe_ptr(result)
     }
 
@@ -101,7 +94,20 @@ impl SolanaFfi {
         let mint = inst.accounts[mint_index].clone();
         let auth = inst.accounts[auth_index].clone();
         let rent = inst.accounts[rent_index].clone();
-        let result = Self::token_init_account(account, mint, auth, rent, signer_seeds);
+        let result: anyhow::Result<()> = (move || {
+            let ix = spl_token::instruction::initialize_account(
+                &spl_token::ID,
+                account.key,
+                mint.key,
+                auth.key,
+            )?;
+            Self::invoke_signed(
+                &ix,
+                &[account, mint, auth, rent],
+                signer_seeds,
+                inst.gos_program_id,
+            )
+        })();
         Self::make_err_unsafe_ptr(result)
     }
 
@@ -124,17 +130,32 @@ impl SolanaFfi {
         let auth = inst.accounts[auth_index].clone();
         let rent = inst.accounts[rent_index].clone();
         let result: anyhow::Result<()> = (move || {
-            let space = spl_token::state::Account::LEN as u64;
-            let lamports = 0; //todo
-            Self::create_account(
-                from,
-                to.clone(),
-                &owner,
-                lamports,
-                space,
+            let len = spl_token::state::Account::LEN;
+            let space = len as u64;
+            let sol_rent = Rent::get()?;
+            let lamports = sol_rent.minimum_balance(len);
+            let ix = solana_program::system_instruction::create_account(
+                from.key, to.key, lamports, space, &owner,
+            );
+            Self::invoke_signed(
+                &ix,
+                &[from, to.clone()],
                 signer_seeds.clone(),
+                inst.gos_program_id,
             )?;
-            Self::token_init_account(to, mint, auth, rent, signer_seeds)
+
+            let ix = spl_token::instruction::initialize_account(
+                &spl_token::ID,
+                to.key,
+                mint.key,
+                auth.key,
+            )?;
+            Self::invoke_signed(
+                &ix,
+                &[to, mint, auth, rent],
+                signer_seeds,
+                inst.gos_program_id,
+            )
         })();
         Self::make_err_unsafe_ptr(result)
     }
@@ -158,12 +179,12 @@ impl SolanaFfi {
                 auth.key,
                 &[], // TODO: support multisig
             )?;
-            solana_program::program::invoke_signed(
+            Self::invoke_signed(
                 &ix,
                 &[account.clone(), dest.clone(), auth.clone()],
-                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+                signer_seeds,
+                inst.gos_program_id,
             )
-            .map_err(Into::into)
         })();
         Self::make_err_unsafe_ptr(result)
     }
@@ -184,6 +205,7 @@ impl SolanaFfi {
             if !new_auth_key.is_nil() {
                 spl_new_authority = Some(Self::get_pub_key(ctx, &new_auth_key)?);
             }
+            msg!(&spl_new_authority.unwrap().to_string());
             let ix = spl_token::instruction::set_authority(
                 &spl_token::ID,
                 account_or_mint.key,
@@ -192,12 +214,12 @@ impl SolanaFfi {
                 current_auth.key,
                 &[], // TODO: Support multisig signers.
             )?;
-            solana_program::program::invoke_signed(
+            Self::invoke_signed(
                 &ix,
                 &[account_or_mint.clone(), current_auth.clone()],
-                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+                signer_seeds,
+                inst.gos_program_id,
             )
-            .map_err(Into::into)
         })();
         Self::make_err_unsafe_ptr(result)
     }
@@ -223,54 +245,14 @@ impl SolanaFfi {
                 &[],
                 amount,
             )?;
-            solana_program::program::invoke_signed(
+            Self::invoke_signed(
                 &ix,
                 &[from.clone(), to.clone(), auth.clone()],
-                &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
+                signer_seeds,
+                inst.gos_program_id,
             )
-            .map_err(Into::into)
         })();
         Self::make_err_unsafe_ptr(result)
-    }
-
-    fn create_account<'a>(
-        from: AccountInfo<'a>,
-        to: AccountInfo<'a>,
-        owner: &Pubkey,
-        lamports: u64,
-        space: u64,
-        signer_seeds: GosValue,
-    ) -> anyhow::Result<()> {
-        let ix = solana_program::system_instruction::create_account(
-            from.key, to.key, lamports, space, owner,
-        );
-        solana_program::program::invoke_signed(
-            &ix,
-            &[from, to],
-            &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
-        )
-        .map_err(Into::into)
-    }
-
-    fn token_init_account<'a>(
-        account: AccountInfo<'a>,
-        mint: AccountInfo<'a>,
-        auth: AccountInfo<'a>,
-        rent: AccountInfo<'a>,
-        signer_seeds: GosValue,
-    ) -> anyhow::Result<()> {
-        let ix = spl_token::instruction::initialize_account(
-            &spl_token::ID,
-            account.key,
-            mint.key,
-            auth.key,
-        )?;
-        solana_program::program::invoke_signed(
-            &ix,
-            &[account, mint, auth, rent],
-            &ref_seeds!(Self::get_signers_seeds(&signer_seeds))[..],
-        )
-        .map_err(Into::into)
     }
 
     fn into_authority_type(val: u8) -> Result<AuthorityType> {
@@ -281,6 +263,29 @@ impl SolanaFfi {
             3 => Ok(AuthorityType::CloseAccount),
             _ => Err(error!(GolError::RtCheckAccountCount)),
         }
+    }
+
+    fn invoke_signed(
+        instruction: &solana_program::instruction::Instruction,
+        account_infos: &[AccountInfo],
+        signer_seeds: GosValue,
+        program_id: &Pubkey,
+    ) -> anyhow::Result<()> {
+        if !signer_seeds.is_nil() {
+            let buf = Self::get_signers_seed_buf(&signer_seeds, program_id);
+            let mut s = &buf[..];
+            let mut groups: Vec<[&[u8]; 2]> = vec![];
+            let hb = solana_program::hash::HASH_BYTES;
+            while s.len() > 0 {
+                groups.push([&s[0..hb], &s[hb..hb + 1]]);
+                s = &s[hb + 1..];
+            }
+            let refs = groups.iter().map(|x| &x[..]).collect::<Vec<&[&[u8]]>>();
+            solana_program::program::invoke_signed(instruction, account_infos, &refs[..])
+        } else {
+            solana_program::program::invoke_signed(instruction, account_infos, &vec![])
+        }
+        .map_err(Into::into)
     }
 
     pub(crate) fn make_account_info_ptr(ctx: &FfiCtx, ai: &AccountInfo, index: usize) -> GosValue {
@@ -323,26 +328,28 @@ impl SolanaFfi {
         Ok(Pubkey::new(slice))
     }
 
-    fn get_signers_seeds<'a>(seeds: &'a GosValue) -> Vec<[&'a [u8]; 2]> {
+    fn get_signers_seed_buf(seeds: &GosValue, program_id: &Pubkey) -> Vec<u8> {
         if let Some((slice, _)) = seeds.as_gos_slice() {
             let data = slice.as_rust_slice();
-            data.iter()
-                .map(|x| {
-                    let struct_ref = x.borrow();
-                    let fields = struct_ref.as_struct().0.borrow_fields();
-                    assert!(fields.len() == 2);
-                    let seed: &[u8] = &fields[0].as_string().as_raw_slice();
-                    let bump = fields[1].as_uint8();
-                    unsafe {
-                        [
-                            std::slice::from_raw_parts(seed.as_ptr(), seed.len()),
-                            std::slice::from_raw_parts(bump, 1),
-                        ]
-                    }
-                })
-                .collect()
+            data.iter().fold(vec![], |mut acc, x| {
+                let struct_ref = x.borrow();
+                let fields = struct_ref.as_struct().0.borrow_fields();
+                assert!(fields.len() == 2);
+                let seed: &[u8] = &fields[0].as_string().as_raw_slice();
+                let mut hashed: Vec<u8> = Self::get_seed_hash(seed, program_id).try_into().unwrap();
+                let bump = fields[1].as_uint8();
+                acc.append(&mut hashed);
+                acc.push(*bump);
+                acc
+            })
         } else {
             vec![]
         }
+    }
+
+    fn get_seed_hash(seed: &[u8], program_id: &Pubkey) -> [u8; solana_program::hash::HASH_BYTES] {
+        let mut full_seed = program_id.to_bytes().to_vec();
+        full_seed.append(&mut seed.to_owned());
+        solana_program::hash::hash(&full_seed).to_bytes()
     }
 }

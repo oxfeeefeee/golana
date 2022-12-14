@@ -14,6 +14,8 @@ pub enum GolError {
     NonPointerReceiver,
     #[msg("AccountInfo in Ix has to be a pointer")]
     NonPointerAccountInfo,
+    #[msg("AccountInfo in Ix has to be a pointer")]
+    NonPointerDataDeclare,
     #[msg("Duplicated Account data declaration")]
     DuplicatedDataDeclare,
     #[msg("Bad Account data declaration")]

@@ -1,6 +1,8 @@
 package solana
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 var solFfi ffiSolana
 
@@ -37,19 +39,4 @@ type ffiSolana interface {
 	token_set_authority(accountOrMint, currentAuth uint, newAuth *PublicKey, authType AuthorityType, signerSeeds []SeedBump) unsafe.Pointer
 
 	token_transfer(from, to, auth uint, amount uint64, signerSeeds []SeedBump) unsafe.Pointer
-}
-
-type SolanaError struct {
-	ptr unsafe.Pointer
-}
-
-func NewSolanaError(ptr unsafe.Pointer) *SolanaError {
-	if ptr == nil {
-		return nil
-	}
-	return &SolanaError{ptr}
-}
-
-func (e *SolanaError) Error() string {
-	return solFfi.error_string(e.ptr)
 }

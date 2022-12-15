@@ -148,9 +148,11 @@ describe("loader", async () => {
     let vault_account_pda = null;
     let vault_account_bump = null;
     let vault_authority_pda = null;
+    let vault_authority_bump = null;
 
     const takerAmount = 1000;
     const initializerAmount = 500;
+    const escrowAccountSpace = 512;
 
     const escrowAccount = anchor.web3.Keypair.generate();
     const payer = anchor.web3.Keypair.generate();
@@ -164,6 +166,8 @@ describe("loader", async () => {
             await provider.connection.requestAirdrop(payer.publicKey, 1000000000),
             "processed"
         );
+
+        let escrowAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(escrowAccountSpace);
 
         // Fund Main Accounts
         await provider.sendAndConfirm(
@@ -183,8 +187,8 @@ describe("loader", async () => {
                     anchor.web3.SystemProgram.createAccount({
                         fromPubkey: payer.publicKey,
                         newAccountPubkey: escrowAccount.publicKey,
-                        lamports: 100000000,
-                        space: 512,
+                        lamports: escrowAccountLamports,
+                        space: escrowAccountSpace,
                         programId: golanaProgram.programId,
                     })
                 );
@@ -281,7 +285,7 @@ describe("loader", async () => {
 
         const [_vault_authority_pda, _vault_authority_bump] = await findAddr("escrow");
         vault_authority_pda = _vault_authority_pda;
-        console.log(_vault_authority_bump);
+        vault_authority_bump = _vault_authority_bump;
 
         const accounts = [
             {
@@ -405,6 +409,7 @@ describe("loader", async () => {
         ];
 
         let writer = new BinaryWriter();
+        writer.writeU8(vault_authority_bump);
         const buf = writer.toArray();
         await exec("IxExchange", accounts, buf, [author, takerMainAccount]);
     })

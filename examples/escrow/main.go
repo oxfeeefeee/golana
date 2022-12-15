@@ -78,25 +78,28 @@ type IxExchange struct {
 	tokenProgram *AccountInfo
 
 	escrowAccount_data *EscrowAccountData
+
+	escrowBump uint8
 }
 
 func (ix *IxExchange) Process() {
 	//fmt2.Println(ix.escrowAccount_data.initializerAmount)
 	//fmt2.Println(ix.escrowAccount_data.takerAmount)
 
-	_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
-	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, bump}}
+	//_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
+	//fmt2.Println(bump)
+	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 
 	AbortOnError(TokenTransfer(
 		ix.takerDepositTokenAccount,
 		ix.initializerReceiveTokenAccount,
 		ix.taker_signer,
-		ix.escrowAccount_data.takerAmount, nil))
+		/*ix.escrowAccount_data.takerAmount*/ 1000, nil))
 	AbortOnError(TokenTransfer(
 		ix.vaultAccount,
 		ix.takerReceiveTokenAccount,
 		ix.vaultAuthority,
-		ix.escrowAccount_data.initializerAmount,
+		/*ix.escrowAccount_data.initializerAmount*/ 500,
 		authority_seeds))
 	AbortOnError(TokenCloseAccount(
 		ix.vaultAccount,

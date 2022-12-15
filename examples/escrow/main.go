@@ -83,23 +83,21 @@ type IxExchange struct {
 }
 
 func (ix *IxExchange) Process() {
-	//fmt2.Println(ix.escrowAccount_data.initializerAmount)
-	//fmt2.Println(ix.escrowAccount_data.takerAmount)
+	assert(*ix.initializer.Key == ix.escrowAccount_data.initializerKey)
+	assert(*ix.initializerDepositTokenAccount.Key == ix.escrowAccount_data.initializerDepositTokenAccount)
+	assert(*ix.initializerReceiveTokenAccount.Key == ix.escrowAccount_data.initializerReceiveTokenAccount)
 
-	//_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
-	//fmt2.Println(bump)
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
-
 	AbortOnError(TokenTransfer(
 		ix.takerDepositTokenAccount,
 		ix.initializerReceiveTokenAccount,
 		ix.taker_signer,
-		/*ix.escrowAccount_data.takerAmount*/ 1000, nil))
+		ix.escrowAccount_data.takerAmount, nil))
 	AbortOnError(TokenTransfer(
 		ix.vaultAccount,
 		ix.takerReceiveTokenAccount,
 		ix.vaultAuthority,
-		/*ix.escrowAccount_data.initializerAmount*/ 500,
+		ix.escrowAccount_data.initializerAmount,
 		authority_seeds))
 	AbortOnError(TokenCloseAccount(
 		ix.vaultAccount,
@@ -111,18 +109,23 @@ func (ix *IxExchange) Process() {
 
 type IxCancel struct {
 	initializer_signer,
+	initializerDepositTokenAccount,
 	vaultAccount,
 	vaultAuthority,
-	initializerDepositTokenAccount,
 	escrowAccount,
 	tokenProgram *AccountInfo
 
 	escrowAccount_data *EscrowAccountData
+
+	escrowBump uint8
 }
 
 func (ix *IxCancel) Process() {
-	_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
-	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, bump}}
+	assert(*ix.initializer_signer.Key == ix.escrowAccount_data.initializerKey)
+	assert(*ix.initializerDepositTokenAccount.Key == ix.escrowAccount_data.initializerDepositTokenAccount)
+
+	//_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
+	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 
 	AbortOnError(TokenTransfer(
 		ix.vaultAccount,

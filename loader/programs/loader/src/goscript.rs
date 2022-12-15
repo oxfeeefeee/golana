@@ -92,6 +92,7 @@ where
             .unwrap()
             .underlying_value()
             .unwrap();
+        let gos_ix = ctx.deref_pointer(&gos_ix).unwrap();
         let ix_fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
         for index in indices {
             let account_info = ctx.deref_pointer(&ix_fields[index]).unwrap();
@@ -106,9 +107,7 @@ where
                 if let Some(data_index) = account_meta.access_mode.get_data_index() {
                     let mut buf: &mut [u8] = &mut self.accounts[index].data.borrow_mut();
                     let data_obj = ctx.deref_pointer(&data_fields[data_index]).unwrap();
-                    msg!(&buf.len().to_string());
                     GosValue::serialize_wo_type(&data_obj, &mut buf)?;
-                    msg!(&buf.len().to_string());
                 }
             }
         }
@@ -155,6 +154,9 @@ where
             true,
             None,
         )];
-        FfiCtx::new_interface(ix, Some((ix_meta.gos_meta, binding)))
+        FfiCtx::new_interface(
+            FfiCtx::new_pointer(ix),
+            Some((ix_meta.gos_meta.ptr_to(), binding)),
+        )
     }
 }

@@ -150,8 +150,8 @@ describe("loader", async () => {
     let vault_authority_pda = null;
     let vault_authority_bump = null;
 
-    const takerAmount = 1000;
-    const initializerAmount = 500;
+    const takerAmount = 1001;
+    const initializerAmount = 502;
     const escrowAccountSpace = 512;
 
     const escrowAccount = anchor.web3.Keypair.generate();
@@ -413,5 +413,45 @@ describe("loader", async () => {
         const buf = writer.toArray();
         await exec("IxExchange", accounts, buf, [author, takerMainAccount]);
     })
+
+    // it("Cancel", async () => {
+    //     const accounts = [
+    //         {
+    //             "pubkey": initializerMainAccount.publicKey,
+    //             "isWritable": true,
+    //             "isSigner": true
+    //         },
+    //         {
+    //             "pubkey": initializerTokenAccountA,
+    //             "isWritable": true,
+    //             "isSigner": false
+    //         },
+    //         {
+    //             "pubkey": vault_account_pda,
+    //             "isWritable": true,
+    //             "isSigner": false
+    //         },
+    //         {
+    //             "pubkey": vault_authority_pda,
+    //             "isWritable": false,
+    //             "isSigner": false
+    //         },
+    //         {
+    //             "pubkey": escrowAccount.publicKey,
+    //             "isWritable": true,
+    //             "isSigner": false
+    //         },
+    //         {
+    //             "pubkey": TOKEN_PROGRAM_ID,
+    //             "isWritable": false,
+    //             "isSigner": false
+    //         }
+    //     ];
+
+    //     let writer = new BinaryWriter();
+    //     writer.writeU8(vault_authority_bump);
+    //     const buf = writer.toArray();
+    //     await exec("IxCancel", accounts, buf, [author, initializerMainAccount]);
+    // })
 
 });

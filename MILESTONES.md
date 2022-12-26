@@ -6,6 +6,8 @@
 
 - The program is deployed to the testnet and passes basic functionality tests. It may be buggy and does not have properly designed APIs nor documentation.
 
+- Milestone one is done: read [this](https://github.com/oxfeeefeee/golana/tree/main/examples/README.md)
+
 ## Two: Alpha Version
 
 - An Anchor-lang like framework with all the features to support an escrow program including:

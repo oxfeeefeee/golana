@@ -1,3 +1,5 @@
+// This is ported from https://github.com/ironaddicteddog/anchor-escrow
+
 package main
 
 import (
@@ -7,6 +9,7 @@ import (
 const ESCROW_PDA_SEED = "escrow"
 const VAULT_PDA_SEED = "token-seed"
 
+// The information related to the escrow transaction stored in the escrow Account
 type EscrowAccountData struct {
 	initializerKey                 PublicKey
 	initializerDepositTokenAccount PublicKey
@@ -15,8 +18,10 @@ type EscrowAccountData struct {
 	takerAmount                    uint64
 }
 
+// This is the definition of the Init Instruction
 type IxInit struct {
-	initializer_signer,
+	// First, list all the accounts that are used by the instruction
+	initializer_signer, // Use _signer suffix for accounts that are used as signer
 	mint,
 	vaultAccount,
 	initializerDepositTokenAccount,
@@ -26,14 +31,22 @@ type IxInit struct {
 	rent,
 	tokenProgram *AccountInfo
 
+	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
+	// Use the account name as prefix, and _dataXXXX suffix:
+	// - dataInit for the data that is initialized by the instruction
+	// - data for the data that is read by the instruction
+	// - dataMut for the data that is written by the instruction
 	escrowAccount_dataInit *EscrowAccountData
 
+	// Finally, list all the instruction parameters
 	vaultAccountBump  uint8
 	initializerAmount uint64
 	takerAmount       uint64
 }
 
+// This is the business logic of the Init instruction
 func (ix *IxInit) Process() {
+	// First, stores the data in the escrow account
 	data := new(EscrowAccountData)
 	data.initializerKey = *ix.initializer_signer.Key
 	data.initializerDepositTokenAccount = *ix.initializerDepositTokenAccount.Key
@@ -41,8 +54,10 @@ func (ix *IxInit) Process() {
 	data.initializerAmount = ix.initializerAmount
 	data.takerAmount = ix.takerAmount
 	ix.escrowAccount_dataInit = data
+	// Then, commit the data to the account
 	CommitData(ix.escrowAccount)
 
+	// The following code is pretty much the same as the original anchor version
 	vault_seeds := []SeedBump{{VAULT_PDA_SEED, ix.vaultAccountBump}}
 	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	AbortOnError(TokenCreateAndInitAccount(
@@ -141,6 +156,7 @@ func (ix *IxCancel) Process() {
 
 }
 
+// This is the entry point of the program
 func main() {
 	GetIx().Process()
 }

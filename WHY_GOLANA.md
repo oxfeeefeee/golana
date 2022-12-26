@@ -14,7 +14,8 @@ While Seahorse is an exciting and useful project, it's not a clean solution. Cor
 
 Go is one of the most popular languages, it's simple yet feature-rich. With Golana you'd have a full-featured Go at your disposal, except for goroutine and channel, which don't make sense on chain anyway.
 
-## Verifiable
+```text
+## Verifiable (This won't happen for now, because compiling on-chain is too expensive)
 
 One of smart contracts' problem is that they are not in plain text on chain, making it hard to verify. With Golana the source code of the smart contracts is stored on chain for anyone to verify, and you can be sure what you see is what you signed for.
 
@@ -25,6 +26,7 @@ From a user's perspective, it would feel like the source code gets read and run 
 - The user sends a tx telling the on chain Goscript engine to run `hello.go`, the engine read the coresponding `hello.bc` and run it.
 
 As long as the on chain Goscript engine is trusted, you can be sure the code executed is the source code you read.
+```
 
 ## Slow? Expensive?
 

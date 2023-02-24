@@ -12,6 +12,9 @@ toml = "0.5.9"
 serde = "1.0.136"
 serde_derive = "1.0.136"
 borsh = "0.9.3" 
+anchor-client = "0.25.0"
+shellexpand = "2.1.0"
+solana-sdk = "~1.10.29"
 
 [dependencies.goscript-engine] 
 path = "../../goscript/engine"
@@ -22,4 +25,8 @@ version = "0.1.0"
 
 [dependencies.golana] 
 path = "../golana" 
+version = "0.1.0"
+
+[dependencies.loader] 
+path = "../loader/programs/loader" 
 version = "0.1.0"

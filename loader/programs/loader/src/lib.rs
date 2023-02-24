@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use golana::*;
 use goscript_vm::Bytecode;
 
-declare_id!("GDfgxSRyoQYdNN7vTJRr82N6Jqg11v6oTwYTjguZ7yuJ");
+declare_id!("6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP");
 
 mod ffi;
 mod goscript;
@@ -65,7 +65,7 @@ pub mod loader {
 #[instruction(handle: String)]
 pub struct GolInitialize<'info> {
     pub authority: Signer<'info>,
-    #[account(zero)]
+    #[account(mut)]
     pub bytecode: Account<'info, GolBytecode>,
 }
 

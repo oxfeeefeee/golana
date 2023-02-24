@@ -1,17 +1,27 @@
 use serde_derive::Deserialize;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub use std::env::current_dir;
 
 #[derive(Debug, Deserialize)]
 pub struct GolanaConfig {
     pub project: Project,
+    pub provider: Provider,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Project {
     pub name: String,
+    pub space: u64,
+    pub out_dir: PathBuf,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Provider {
+    pub cluster: String,
+    pub wallet: String,
+    pub golana_id: String,
 }
 
 pub fn read_config(dir: &Path) -> io::Result<GolanaConfig> {

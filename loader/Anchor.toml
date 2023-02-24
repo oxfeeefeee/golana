@@ -1,8 +1,17 @@
 [features]
 seeds = false
 skip-lint = false
+
+[programs.devnet]
+loader = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
+
+
+[programs.testnet]
+loader = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
+
+
 [programs.localnet]
-loader = "GDfgxSRyoQYdNN7vTJRr82N6Jqg11v6oTwYTjguZ7yuJ"
+loader = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
 
 [registry]
 url = "https://api.apr.dev"

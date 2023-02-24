@@ -26,7 +26,7 @@ describe("loader", async () => {
     it("Create", async () => {
         // Airdropping tokens to author.
         const latestBlockhash = await provider.connection.getLatestBlockhash();
-        const sig = await provider.connection.requestAirdrop(author.publicKey, 10000000000);
+        const sig = await provider.connection.requestAirdrop(author.publicKey, 1000000000);
         await provider.connection.confirmTransaction(
             { signature: sig, ...latestBlockhash },
             "processed"
@@ -41,7 +41,7 @@ describe("loader", async () => {
                         newAccountPubkey: bytecodePK,
                         basePubkey: author.publicKey,
                         seed: seed,
-                        lamports: 1000000000,
+                        lamports: 900000000,
                         space: 32 * 1024,
                         programId: golanaProgram.programId,
                     })

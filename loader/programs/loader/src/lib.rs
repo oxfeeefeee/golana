@@ -65,7 +65,7 @@ pub mod loader {
 #[instruction(handle: String)]
 pub struct GolInitialize<'info> {
     pub authority: Signer<'info>,
-    #[account(mut)]
+    #[account(zero)]
     pub bytecode: Account<'info, GolBytecode>,
 }
 

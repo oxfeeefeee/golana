@@ -54,6 +54,11 @@ enum Commands {
         #[arg(short, long)]
         name: String,
     },
+    // /// Run the test script
+    // Test {
+    //     #[arg(short, long)]
+    //     path: Option<PathBuf>,
+    // },
 }
 
 fn main() {
@@ -64,39 +69,55 @@ fn main() {
 }
 
 fn processor() -> Result<()> {
-    let current_dir = config::current_dir()?;
-    let cfg = config::read_config(&current_dir)?;
-
     let cli = Cli::parse();
-    match &cli.command {
-        Some(Commands::Build { out_name }) => build::build(
-            out_name
-                .as_ref()
-                .unwrap_or(&format!("{}.gosb", &cfg.project.name)),
-            &cfg.project.out_dir,
-        ),
-        Some(Commands::Airdrop { amount }) => {
-            println!(
-                "Airdrop {} lamports to wallet at {}",
-                amount.unwrap(),
-                cfg.provider.wallet
-            );
-            airdrop::airdrop(amount.unwrap(), &cfg.provider)
+    if cli.command.is_none() {
+        print!("Use --h for help\n");
+        return Ok(());
+    }
+
+    let current_dir = config::current_dir()?;
+    if let Some(path) = config::get_full_path(&current_dir) {
+        let cfg = config::read_config(&path)?;
+        match &cli.command.unwrap() {
+            Commands::Build { out_name } => build::build(
+                out_name
+                    .as_ref()
+                    .unwrap_or(&format!("{}.gosb", &cfg.project.name)),
+                &cfg.project.out_dir,
+            ),
+            Commands::Airdrop { amount } => {
+                println!(
+                    "Airdrop {} lamports to wallet at {}",
+                    amount.unwrap(),
+                    cfg.provider.wallet
+                );
+                airdrop::airdrop(amount.unwrap(), &cfg.provider)
+            }
+            Commands::Deploy { path, force } => {
+                let path = path.clone().unwrap_or_else(|| {
+                    // Get default path by adding project name to out_dir
+                    let mut path = cfg.project.out_dir.clone();
+                    path.push(&cfg.project.name);
+                    path.set_extension("gosb");
+                    path
+                });
+                print!("Deploying from path: {}\n", path.to_string_lossy());
+                deploy::deploy(&cfg, &path, *force)?;
+                print!("Deployed!\n");
+                Ok(())
+            }
+            Commands::Init { .. } => {
+                println!("Golana project already initialized");
+                Ok(())
+            }
         }
-        Some(Commands::Deploy { path, force }) => {
-            let path = path.clone().unwrap_or_else(|| {
-                // Get default path by adding project name to out_dir
-                let mut path = cfg.project.out_dir.clone();
-                path.push(&cfg.project.name);
-                path.set_extension("gosb");
-                path
-            });
-            print!("Deploying from path: {}\n", path.to_string_lossy());
-            deploy::deploy(&cfg, &path, *force)?;
-            print!("Deployed!\n");
-            Ok(())
+    } else {
+        match &cli.command.unwrap() {
+            Commands::Init { name } => init::init(name),
+            _ => {
+                println!("No Golana.toml found in current directory");
+                Ok(())
+            }
         }
-        Some(Commands::Init { name }) => init::init(name),
-        None => Ok(()),
     }
 }

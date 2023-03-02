@@ -24,10 +24,17 @@ pub struct Provider {
     pub golana_id: String,
 }
 
-pub fn read_config(dir: &Path) -> io::Result<GolanaConfig> {
+pub fn get_full_path(dir: &Path) -> Option<PathBuf> {
     let mut buf = dir.to_owned();
     buf.push("Golana.toml");
+    if buf.exists() {
+        Some(buf)
+    } else {
+        None
+    }
+}
 
-    let content = std::fs::read_to_string(&buf)?;
+pub fn read_config(dir: &Path) -> io::Result<GolanaConfig> {
+    let content = std::fs::read_to_string(&dir)?;
     toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
 }

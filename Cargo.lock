@@ -1420,6 +1420,7 @@ name = "golana-cli"
 version = "0.1.0"
 dependencies = [
  "anchor-client",
+ "anchor-syn",
  "anyhow",
  "borsh",
  "clap 4.0.19",
@@ -1429,6 +1430,7 @@ dependencies = [
  "loader",
  "serde",
  "serde_derive",
+ "serde_json",
  "shellexpand",
  "solana-sdk",
  "toml",

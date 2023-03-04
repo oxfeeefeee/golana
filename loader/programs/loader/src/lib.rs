@@ -22,18 +22,13 @@ static ALLOC: smalloc::Smalloc<
 #[program]
 pub mod loader {
     use super::*;
-    use std::vec;
 
     pub fn gol_initialize(ctx: Context<GolInitialize>, handle: String) -> Result<()> {
-        let gol_pk = Pubkey::create_with_seed(ctx.accounts.authority.key, &handle, &ID).unwrap();
-        let bytecode = &mut ctx.accounts.bytecode;
-        require!(bytecode.key() == gol_pk, GolError::WrongHandle);
+        initialize_impl(&ctx.accounts.authority, &mut ctx.accounts.bytecode, handle)
+    }
 
-        bytecode.handle = handle;
-        bytecode.authority = ctx.accounts.authority.key();
-        bytecode.finalized = false;
-        bytecode.content = vec![];
-        Ok(())
+    pub fn gol_clear(ctx: Context<GolClear>, handle: String) -> Result<()> {
+        initialize_impl(&ctx.accounts.authority, &mut ctx.accounts.bytecode, handle)
     }
 
     pub fn gol_write(ctx: Context<GolWrite>, data: Vec<u8>) -> Result<()> {
@@ -61,11 +56,34 @@ pub mod loader {
     }
 }
 
+fn initialize_impl(
+    auth: &Signer,
+    bytecode: &mut Account<GolBytecode>,
+    handle: String,
+) -> Result<()> {
+    let gol_pk = Pubkey::create_with_seed(auth.key, &handle, &ID).unwrap();
+    require!(bytecode.key() == gol_pk, GolError::WrongHandle);
+
+    bytecode.handle = handle;
+    bytecode.authority = auth.key();
+    bytecode.finalized = false;
+    bytecode.content = vec![];
+    Ok(())
+}
+
 #[derive(Accounts)]
 #[instruction(handle: String)]
 pub struct GolInitialize<'info> {
     pub authority: Signer<'info>,
     #[account(zero)]
+    pub bytecode: Account<'info, GolBytecode>,
+}
+
+#[derive(Accounts)]
+#[instruction(handle: String)]
+pub struct GolClear<'info> {
+    pub authority: Signer<'info>,
+    #[account(mut)]
     pub bytecode: Account<'info, GolBytecode>,
 }
 

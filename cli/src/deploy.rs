@@ -2,7 +2,7 @@ use crate::config::*;
 use crate::util::new_vm_program;
 use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey};
 use anchor_client::Program;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use solana_sdk;
 use std::path::Path;
 
@@ -22,8 +22,10 @@ pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> 
     if account.value.is_some() {
         if !force {
             println!("Program already deployed, use -f to force re-deploy");
-            return Ok(());
+            return Err(anyhow!("Program already deployed"));
         }
+
+        gol_clear(&program, &bytecode_pk, config.project.name.clone())?;
     } else {
         // create a new account
         let ix = solana_sdk::system_instruction::create_account_with_seed(
@@ -36,9 +38,9 @@ pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> 
             &program.id(),
         );
         program.request().instruction(ix).send()?;
-    }
 
-    gol_initialize(&program, &bytecode_pk, config.project.name.clone())?;
+        gol_initialize(&program, &bytecode_pk, config.project.name.clone())?;
+    }
 
     let bytecode = std::fs::read(bc_path)?;
     gol_write(&program, &bytecode_pk, &bytecode)?;
@@ -60,6 +62,22 @@ fn gol_initialize(program: &Program, bytecode_pk: &Pubkey, name: String) -> Resu
             bytecode: bytecode_pk.to_owned(),
         })
         .args(loader::instruction::GolInitialize { handle: name })
+        .send()?;
+    Ok(())
+}
+
+/// Call Clear instruction of Golana program
+fn gol_clear(program: &Program, bytecode_pk: &Pubkey, name: String) -> Result<()> {
+    program
+        .request()
+        .instruction(
+            solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(256 * 1024),
+        )
+        .accounts(loader::accounts::GolClear {
+            authority: program.payer(),
+            bytecode: bytecode_pk.to_owned(),
+        })
+        .args(loader::instruction::GolClear { handle: name })
         .send()?;
     Ok(())
 }

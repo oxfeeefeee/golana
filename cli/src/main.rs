@@ -6,6 +6,7 @@ mod airdrop;
 mod build;
 mod config;
 mod deploy;
+mod idl;
 mod init;
 mod template;
 mod util;
@@ -71,7 +72,7 @@ fn main() {
 fn processor() -> Result<()> {
     let cli = Cli::parse();
     if cli.command.is_none() {
-        print!("Use --h for help\n");
+        print!("Use -h for help\n");
         return Ok(());
     }
 

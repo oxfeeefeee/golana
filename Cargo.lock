@@ -3060,9 +3060,6 @@ dependencies = [
 [[package]]
 name = "smalloc"
 version = "0.1.2"
-dependencies = [
- "solana-program",
-]
 
 [[package]]
 name = "smallvec"

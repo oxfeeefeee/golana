@@ -105,8 +105,6 @@ pub struct GolFinalize<'info> {
 #[derive(Accounts)]
 #[instruction(id: String, args: Vec<u8>)]
 pub struct GolExecute<'info> {
-    pub authority: Signer<'info>,
-    #[account(has_one = authority)]
     pub bytecode: Account<'info, GolBytecode>,
 }
 

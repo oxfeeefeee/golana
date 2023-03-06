@@ -255,7 +255,6 @@ describe("loader", async () => {
 
     let exec = async (ixName: string, accounts: Array<AccountMeta>, args: Uint8Array, signers: Array<anchor.web3.Signer>) => {
         await golanaProgram.methods.golExecute(ixName, args).accounts({
-            authority: author.publicKey,
             bytecode: bytecodePK,
         }).remainingAccounts(accounts).preInstructions(
             [
@@ -346,7 +345,7 @@ describe("loader", async () => {
         writer.writeU64(initializerAmount);
         writer.writeU64(takerAmount);
         const buf = writer.toArray();
-        await exec('IxInit', accounts, buf, [author, initializerMainAccount]);
+        await exec('IxInit', accounts, buf, [initializerMainAccount]);
 
         let _vault = await getAccount(provider.connection, vault_account_pda);
         console.log(_vault.owner.toString());
@@ -411,7 +410,7 @@ describe("loader", async () => {
         let writer = new BinaryWriter();
         writer.writeU8(vault_authority_bump);
         const buf = writer.toArray();
-        await exec("IxExchange", accounts, buf, [author, takerMainAccount]);
+        await exec("IxExchange", accounts, buf, [takerMainAccount]);
     })
 
     // it("Cancel", async () => {
@@ -451,7 +450,7 @@ describe("loader", async () => {
     //     let writer = new BinaryWriter();
     //     writer.writeU8(vault_authority_bump);
     //     const buf = writer.toArray();
-    //     await exec("IxCancel", accounts, buf, [author, initializerMainAccount]);
+    //     await exec("IxCancel", accounts, buf, [initializerMainAccount]);
     // })
 
 });

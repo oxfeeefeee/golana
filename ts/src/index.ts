@@ -31,7 +31,6 @@ export async function findAddr(golanaProgram: Program<Loader>, bytecodePK: Publi
 
 export async function exec(
   golanaProgram: Program<Loader>,
-  authority: PublicKey,
   bytecodePK: PublicKey,
   ixName: string,
   accounts: AccountMeta[],
@@ -39,10 +38,7 @@ export async function exec(
   signers: Signer[]
 ) {
   await golanaProgram.methods.golExecute(ixName, <Buffer>args)
-    .accounts({
-      authority,
-      bytecode: bytecodePK,
-    })
+    .accounts({ bytecode: bytecodePK })
     .remainingAccounts(accounts)
     .preInstructions([
         ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),

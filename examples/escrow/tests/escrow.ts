@@ -17,10 +17,9 @@ describe("escrow", async() => {
     // Initialize the golana program.
     const golana = initGolana("localnet");
 
-    // Author for the tests.
-    const author = anchor.web3.Keypair.generate();
+    const authorPK = provider.publicKey;
     const seed = "escrow";
-    const bytecodePK = await anchor.web3.PublicKey.createWithSeed(author.publicKey, seed, golana.programId);
+    const bytecodePK = await anchor.web3.PublicKey.createWithSeed(authorPK, seed, golana.programId);
 
     const takerAmount = 1001;
     const initializerAmount = 502;
@@ -215,15 +214,7 @@ describe("escrow", async() => {
       writer.writeU64(initializerAmount);
       writer.writeU64(takerAmount);
       const buf = writer.toArray();
-      const result = await exec(
-        golana,
-        author.publicKey,
-        bytecodePK,
-        'IxInit',
-        accounts,
-        buf,
-        [author, initializerMainAccount]
-      );
+      const result = await exec(golana, bytecodePK, 'IxInit', accounts, buf, [initializerMainAccount]);
       assert.ok(result.finalized);
 
       const _vault = await getAccount(provider.connection, vault_account_pda);
@@ -289,7 +280,7 @@ describe("escrow", async() => {
       const writer = new BinaryWriter();
       writer.writeU8(vault_authority_bump);
       const buf = writer.toArray();
-      await exec(golana,author.publicKey, bytecodePK, "IxExchange", accounts, buf, [author, takerMainAccount]);
+      await exec(golana, bytecodePK, "IxExchange", accounts, buf, [takerMainAccount]);
     });
 
     // it("Cancel", async () => {

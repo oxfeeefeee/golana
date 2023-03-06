@@ -24,6 +24,27 @@ export type Loader = {
             ]
         },
         {
+            "name": "golClear",
+            "accounts": [
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "bytecode",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "handle",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "golWrite",
             "accounts": [
                 {
@@ -63,11 +84,6 @@ export type Loader = {
         {
             "name": "golExecute",
             "accounts": [
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                },
                 {
                     "name": "bytecode",
                     "isMut": false,
@@ -144,6 +160,27 @@ export const IDL: Loader = {
             ]
         },
         {
+            "name": "golClear",
+            "accounts": [
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "bytecode",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "handle",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "golWrite",
             "accounts": [
                 {
@@ -183,11 +220,6 @@ export const IDL: Loader = {
         {
             "name": "golExecute",
             "accounts": [
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                },
                 {
                     "name": "bytecode",
                     "isMut": false,

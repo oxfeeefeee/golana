@@ -24,6 +24,27 @@
             ]
         },
         {
+            "name": "golClear",
+            "accounts": [
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "bytecode",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "handle",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "golWrite",
             "accounts": [
                 {
@@ -63,11 +84,6 @@
         {
             "name": "golExecute",
             "accounts": [
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                },
                 {
                     "name": "bytecode",
                     "isMut": false,

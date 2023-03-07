@@ -85,11 +85,6 @@ export type Loader = {
       "name": "golExecute",
       "accounts": [
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
           "name": "bytecode",
           "isMut": false,
           "isSigner": false
@@ -225,11 +220,6 @@ export const IDL: Loader = {
     {
       "name": "golExecute",
       "accounts": [
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
         {
           "name": "bytecode",
           "isMut": false,

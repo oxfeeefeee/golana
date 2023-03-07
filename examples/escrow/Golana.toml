@@ -5,5 +5,5 @@ out_dir = "./target"
 
 [provider]
 cluster = "localnet"
-wallet = "/Users/wuhao/.config/solana/id.json"
+wallet = "~/.config/solana/id.json"
 golana_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"

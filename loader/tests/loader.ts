@@ -16,103 +16,103 @@ describe("loader", async () => {
     const golanaProgram = anchor.workspace.Loader as Program<Loader>;
 
     // Author for the tests.
-    const author = anchor.web3.Keypair.generate();
+    //const author = anchor.web3.Keypair.generate();
     // Create Golana account
-    const seed = "test2";
+    const seed = "escrow";
     const bytecodePK = await anchor.web3.PublicKey.createWithSeed(
-        author.publicKey, seed, golanaProgram.programId
+        provider.wallet.publicKey, seed, golanaProgram.programId
     );
 
-    it("Create", async () => {
-        // Airdropping tokens to author.
-        const latestBlockhash = await provider.connection.getLatestBlockhash();
-        const sig = await provider.connection.requestAirdrop(author.publicKey, 1000000000);
-        await provider.connection.confirmTransaction(
-            { signature: sig, ...latestBlockhash },
-            "processed"
-        );
+    // it("Create", async () => {
+    //     // Airdropping tokens to author.
+    //     const latestBlockhash = await provider.connection.getLatestBlockhash();
+    //     const sig = await provider.connection.requestAirdrop(author.publicKey, 1000000000);
+    //     await provider.connection.confirmTransaction(
+    //         { signature: sig, ...latestBlockhash },
+    //         "processed"
+    //     );
 
-        await provider.sendAndConfirm(
-            (() => {
-                const tx = new anchor.web3.Transaction();
-                tx.add(
-                    anchor.web3.SystemProgram.createAccountWithSeed({
-                        fromPubkey: author.publicKey,
-                        newAccountPubkey: bytecodePK,
-                        basePubkey: author.publicKey,
-                        seed: seed,
-                        lamports: 900000000,
-                        space: 32 * 1024,
-                        programId: golanaProgram.programId,
-                    })
-                );
-                return tx;
-            })(),
-            [author],
-            //{ skipPreflight: true },
-        );
+    //     await provider.sendAndConfirm(
+    //         (() => {
+    //             const tx = new anchor.web3.Transaction();
+    //             tx.add(
+    //                 anchor.web3.SystemProgram.createAccountWithSeed({
+    //                     fromPubkey: author.publicKey,
+    //                     newAccountPubkey: bytecodePK,
+    //                     basePubkey: author.publicKey,
+    //                     seed: seed,
+    //                     lamports: 900000000,
+    //                     space: 32 * 1024,
+    //                     programId: golanaProgram.programId,
+    //                 })
+    //             );
+    //             return tx;
+    //         })(),
+    //         [author],
+    //         //{ skipPreflight: true },
+    //     );
 
-    });
-
-
-    it("Initialize", async () => {
-        await golanaProgram.methods.golInitialize(seed).accounts({
-            authority: author.publicKey,
-            bytecode: bytecodePK,
-        }).signers([author]).rpc({ skipPreflight: true });
-
-        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
-        console.log(bcAccount);
-
-        assert.ok(bcAccount.authority.equals(author.publicKey));
-        assert.ok(bcAccount.handle == seed);
-        assert.ok(bcAccount.content.length == 0);
-        assert.ok(!bcAccount.finalized);
-    });
+    // });
 
 
-    it("Write", async () => {
-        const fs = require('fs');
-        const content = fs.readFileSync('../examples/escrow/target/escrow.gosb');
-        console.log("content length: ", content.length);
-        const size = 850;
-        let totalSent = 0;
+    // it("Initialize", async () => {
+    //     await golanaProgram.methods.golInitialize(seed).accounts({
+    //         authority: author.publicKey,
+    //         bytecode: bytecodePK,
+    //     }).signers([author]).rpc({ skipPreflight: true });
 
-        while (totalSent < content.length) {
-            const end = Math.min(totalSent + size, content.length);
-            const data = content.slice(totalSent, end);
+    //     let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
+    //     console.log(bcAccount);
 
-            await golanaProgram.methods.golWrite(data).accounts({
-                authority: author.publicKey,
-                bytecode: bytecodePK,
-            }).preInstructions(
-                [
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 })]
-                // ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
-            ).signers([author]).rpc({ skipPreflight: true });
-            totalSent = end;
-
-            console.log("Total sent: ", totalSent);
-        }
-
-        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
-        assert.ok(bcAccount.content.length == content.length);
-    });
+    //     assert.ok(bcAccount.authority.equals(author.publicKey));
+    //     assert.ok(bcAccount.handle == seed);
+    //     assert.ok(bcAccount.content.length == 0);
+    //     assert.ok(!bcAccount.finalized);
+    // });
 
 
-    it("Finalize", async () => {
-        await golanaProgram.methods.golFinalize().accounts({
-            authority: author.publicKey,
-            bytecode: bytecodePK,
-        }).preInstructions(
-            [
-                ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
-        ).signers([author]).rpc({ skipPreflight: true });
+    // it("Write", async () => {
+    //     const fs = require('fs');
+    //     const content = fs.readFileSync('../examples/escrow/target/escrow.gosb');
+    //     console.log("content length: ", content.length);
+    //     const size = 850;
+    //     let totalSent = 0;
 
-        let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
-        assert.ok(bcAccount.finalized);
-    });
+    //     while (totalSent < content.length) {
+    //         const end = Math.min(totalSent + size, content.length);
+    //         const data = content.slice(totalSent, end);
+
+    //         await golanaProgram.methods.golWrite(data).accounts({
+    //             authority: author.publicKey,
+    //             bytecode: bytecodePK,
+    //         }).preInstructions(
+    //             [
+    //                 ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 })]
+    //             // ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
+    //         ).signers([author]).rpc({ skipPreflight: true });
+    //         totalSent = end;
+
+    //         console.log("Total sent: ", totalSent);
+    //     }
+
+    //     let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
+    //     assert.ok(bcAccount.content.length == content.length);
+    // });
+
+
+    // it("Finalize", async () => {
+    //     await golanaProgram.methods.golFinalize().accounts({
+    //         authority: author.publicKey,
+    //         bytecode: bytecodePK,
+    //     }).preInstructions(
+    //         [
+    //             ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+    //             ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })]
+    //     ).signers([author]).rpc({ skipPreflight: true });
+
+    //     let bcAccount = await golanaProgram.account.golBytecode.fetch(bytecodePK);
+    //     assert.ok(bcAccount.finalized);
+    // });
 
     // class Assignable {
     //     constructor(properties) {

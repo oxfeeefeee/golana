@@ -1427,6 +1427,7 @@ dependencies = [
  "dirs 3.0.2",
  "golana",
  "goscript-engine",
+ "goscript-vm",
  "loader",
  "serde",
  "serde_derive",
@@ -3060,6 +3061,9 @@ dependencies = [
 [[package]]
 name = "smalloc"
 version = "0.1.2"
+dependencies = [
+ "solana-program",
+]
 
 [[package]]
 name = "smallvec"

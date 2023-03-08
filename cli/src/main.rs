@@ -81,9 +81,7 @@ fn processor() -> Result<()> {
         let cfg = config::read_config(&path)?;
         match &cli.command.unwrap() {
             Commands::Build { out_name } => build::build(
-                out_name
-                    .as_ref()
-                    .unwrap_or(&format!("{}.gosb", &cfg.project.name)),
+                out_name.as_ref().unwrap_or(&cfg.project.name),
                 &cfg.project.out_dir,
             ),
             Commands::Airdrop { amount } => {

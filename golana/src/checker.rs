@@ -34,7 +34,8 @@ impl AccessMode {
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
-pub struct AccountMeta {
+pub struct AccMeta {
+    pub name: String,
     pub is_signer: bool,
     pub access_mode: AccessMode,
 }
@@ -45,9 +46,9 @@ pub struct IxMeta {
     pub gos_meta: types::Meta,
     pub process_method: types::FunctionKey,
     pub process_method_index: usize,
-    pub accounts: Vec<AccountMeta>,
+    pub accounts: Vec<AccMeta>,
     pub accounts_data: Vec<(usize, types::Meta)>,
-    pub args: Vec<types::Meta>,
+    pub args: Vec<(String, types::Meta)>,
 }
 
 impl IxMeta {
@@ -72,7 +73,7 @@ impl IxMeta {
         // Build struct fields
         let fields = metas[inner_meta.key].as_struct().infos();
         let mut i = 0;
-        let mut accounts: Vec<(AccountMeta, &str)> = vec![];
+        let mut accounts: Vec<(AccMeta, &str)> = vec![];
 
         // First, get all AccountInfo
         while i < fields.len() {
@@ -82,10 +83,18 @@ impl IxMeta {
                 if meta.ptr_depth != 1 {
                     return Err(error!(GolError::NonPointerAccountInfo));
                 }
+                let signer_postfix = "_signer";
+                let is_signer = name.ends_with(signer_postfix);
+                let name = if is_signer {
+                    &name[..name.len() - signer_postfix.len()]
+                } else {
+                    name
+                };
                 accounts.push((
-                    AccountMeta {
+                    AccMeta {
                         // todo: proper parsing
-                        is_signer: name.ends_with("_signer"),
+                        name: name.to_owned(),
+                        is_signer,
                         access_mode: AccessMode::None,
                     },
                     &fields[i].name,
@@ -137,7 +146,7 @@ impl IxMeta {
                 return Err(error!(GolError::WrongArgType));
             }
             // todo: more checks
-            args.push(meta.clone());
+            args.push((fields[i].name.clone(), meta.clone()));
             i += 1;
         }
 

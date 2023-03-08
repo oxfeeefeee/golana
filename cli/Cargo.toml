@@ -26,6 +26,12 @@ features = ["read_fs", "codegen", "btree_map"]
 version = "0.1.0"
 
 
+[dependencies.goscript-vm] 
+path = "../../goscript/vm"
+features = ["btree_map"]
+version = "0.1.0"
+
+
 [dependencies.golana] 
 path = "../golana" 
 version = "0.1.0"

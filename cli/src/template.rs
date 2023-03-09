@@ -18,6 +18,51 @@ golana_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
     )
 }
 
+pub fn test_script(name: &str) -> String {
+    format!(
+        r#" todo: xxxx {}
+"#,
+        name
+    )
+}
+
+pub fn main_dot_go() -> String {
+    r#"package main
+    
+import (
+	. "solana"
+)
+
+// This is the definition of the MyInstruction
+type MyInstruction struct {
+	// First, list all the accounts that are used by the instruction
+	// Use _signer suffix for accounts that are used as signer
+    // ...
+
+	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
+	// Use the account name as prefix, and _dataXXXX suffix:
+	// - dataInit for the data that is initialized by the instruction
+	// - data for the data that is read by the instruction
+	// - dataMut for the data that is written by the instruction
+	// ...
+
+	// Finally, list all the instruction parameters
+    // ...
+}
+
+// This is the business logic of the MyInstruction
+func (ix *MyInstruction) Process() {	
+    // ...
+}
+
+// This is the entry point of the program
+func main() {
+	GetIx().Process()
+}
+
+"#.to_owned()
+}
+
 fn get_wallet_path() -> String {
     let home_dir = dirs::home_dir().unwrap_or_else(|| {
         println!("$HOME doesn't exist");

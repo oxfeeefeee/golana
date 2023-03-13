@@ -39,3 +39,9 @@ version = "0.1.0"
 [dependencies.loader] 
 path = "../loader/programs/loader" 
 version = "0.1.0"
+
+
+[build-dependencies]
+anyhow = "1.0"
+walkdir = "2"
+zip = { version = "0.6.2", features = ["deflate"], default-features = false }

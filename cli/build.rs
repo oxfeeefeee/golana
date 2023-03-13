@@ -8,8 +8,8 @@ use walkdir::{DirEntry, WalkDir};
 
 use zip::write::FileOptions;
 
-const GO_LIB_DIR: &str = "../lib";
-const GO_LIB_ZIP: &str = "lib.zip";
+const GO_LIB_DIR: &str = "../go";
+const GO_LIB_ZIP: &str = "go_lib.zip";
 
 fn main() {
     println!(

@@ -22,7 +22,7 @@ anchor-syn = { version = "0.25.0", features = ["idl"] }
 [dependencies.goscript-engine] 
 path = "../../goscript/engine"
 default-features = false
-features = ["read_fs", "codegen", "btree_map"]
+features = ["read_fs", "read_zip", "codegen", "btree_map"]
 version = "0.1.0"
 
 

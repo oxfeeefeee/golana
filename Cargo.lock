@@ -1461,6 +1461,7 @@ dependencies = [
  "goscript-types",
  "goscript-vm",
  "lazy_static",
+ "zip",
 ]
 
 [[package]]

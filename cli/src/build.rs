@@ -7,7 +7,12 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub fn build(out_name: &str, out_dir: &Path) -> Result<()> {
-    let reader = gos::SourceReader::local_fs(PathBuf::from("./"), PathBuf::from("../../go/"));
+    let bytes = include_bytes!("../go_lib.zip");
+    let reader = gos::SourceReader::zip_lib_and_local_fs(
+        std::borrow::Cow::Borrowed(bytes),
+        PathBuf::from("./"),
+        PathBuf::from("./"),
+    );
     let engine = gos::Engine::new();
     let (bc, _) = engine
         .compile(false, false, &reader, Path::new("./main.go"))

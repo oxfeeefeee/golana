@@ -12,14 +12,11 @@ const GO_LIB_DIR: &str = "../go";
 const GO_LIB_ZIP: &str = "go_lib.zip";
 
 fn main() {
-    println!(
-        "Running cli/build.rs from {}",
-        std::env::current_dir().unwrap().display()
-    );
+    let cwd = std::env::current_dir().unwrap();
+    println!("Running cli/build.rs from {}", cwd.display());
     println!("cargo:rerun-if-changed={}", GO_LIB_DIR);
 
-    let out_dir = std::env::var("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join(GO_LIB_ZIP);
+    let dest_path = Path::new(&cwd).join(GO_LIB_ZIP);
     println!(
         "Packing files from {} to {}",
         GO_LIB_DIR,

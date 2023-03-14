@@ -44,14 +44,11 @@ pub fn build(out_name: &str, out_dir: &Path) -> Result<()> {
 }
 
 fn write_file(out_name: &str, out_dir: &Path, data: &[u8]) -> std::io::Result<()> {
-    let mut full_name = out_dir.to_owned();
-    full_name.push(out_name);
-
+    let full_name = out_dir.join(out_name);
     let mut f = std::fs::OpenOptions::new()
         .write(true)
         .truncate(true)
         .create(true)
         .open(full_name)?;
-    f.write_all(data)?;
-    f.flush()
+    f.write_all(data)
 }

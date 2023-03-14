@@ -25,8 +25,7 @@ pub struct Provider {
 }
 
 pub fn get_full_path(dir: &Path) -> Option<PathBuf> {
-    let mut buf = dir.to_owned();
-    buf.push("Golana.toml");
+    let buf = dir.join("Golana.toml");
     if buf.exists() {
         Some(buf)
     } else {
@@ -36,5 +35,5 @@ pub fn get_full_path(dir: &Path) -> Option<PathBuf> {
 
 pub fn read_config(dir: &Path) -> io::Result<GolanaConfig> {
     let content = std::fs::read_to_string(&dir)?;
-    toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
+    Ok(toml::from_str(&content)?)
 }

@@ -13,5 +13,9 @@
   "env": {
     "browser": true,
     "node": true
+  },
+
+  "rules": {
+    "prefer-const": "off"
   }
 }

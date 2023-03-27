@@ -174,56 +174,62 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
       }
     }
 
-    return this._exec.accounts({ bytecode: this._bytecodePK }).remainingAccounts(accs);
+    this._exec.accounts({ bytecode: this._bytecodePK }).remainingAccounts(accs);
+    return this;
   }
 
   public accountsStrict(
     accounts: Accounts<I["accounts"][number]>
   ) {
-    return this._exec.accountsStrict(accounts);
+    this._exec.accountsStrict(accounts);
+    return this;
   }
 
   public signers(signers: Array<Signer>) {
-    return this._exec.signers(signers);
+    this._exec.signers(signers);
+    return this;
   }
 
   public remainingAccounts(
     accounts: Array<AccountMeta>
   ) {
-    return this._exec.remainingAccounts(accounts);
+    this._exec.remainingAccounts(accounts);
+    return this;
   }
 
   public preInstructions(
     ixs: Array<TransactionInstruction>
   ) {
-    return this._exec.preInstructions(ixs);
+    this._exec.preInstructions(ixs);
+    return this;
   }
 
   public postInstructions(
     ixs: Array<TransactionInstruction>
   ) {
-    return this._exec.postInstructions(ixs);
+    this._exec.postInstructions(ixs);
+    return this;
   }
 
-  public async rpc(options?: ConfirmOptions) {
+  public rpc(options?: ConfirmOptions) {
     return this._exec.rpc(options);
   }
 
-  public async rpcAndKeys(options?: ConfirmOptions) {
+  public rpcAndKeys(options?: ConfirmOptions) {
     return this._exec.rpcAndKeys(options);
   }
 
-  public async view(options?: ConfirmOptions) {
+  public view(options?: ConfirmOptions) {
     return this._exec.view(options);
   }
 
-  public async simulate(
+  public simulate(
     options?: ConfirmOptions
   ) {
     return this._exec.simulate(options);
   }
 
-  public async instruction() {
+  public instruction() {
     return this._exec.instruction();
   }
 
@@ -231,11 +237,11 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
    * Convenient shortcut to get instructions and pubkeys via
    * const { pubkeys, instructions } = await prepare();
    */
-  public async prepare() {
+  public prepare() {
     return this._exec.prepare();
   }
 
-  public async transaction() {
+  public transaction() {
     return this._exec.transaction();
   }
 }

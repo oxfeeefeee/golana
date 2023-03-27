@@ -31,14 +31,6 @@ export class Program<IDL extends Idl = Idl> {
   readonly methods: MethodsNamespace<IDL>;
 
   /**
-   * Address of the program.
-   */
-  public get programId(): PublicKey {
-    return this._programId;
-  }
-  private _programId: PublicKey;
-
-  /**
    * Address of the Golana loader.
    */
   public get golanaLoader(): AnchorProgram<Loader> {
@@ -52,7 +44,6 @@ export class Program<IDL extends Idl = Idl> {
   public get idl(): IDL {
     return this._idl;
   }
-  private _idl: IDL;
 
   /**
    * Wallet and network provider.
@@ -60,48 +51,40 @@ export class Program<IDL extends Idl = Idl> {
   public get provider(): Provider {
     return this._provider;
   }
-  private _provider: Provider;
 
-  public get bytecodePK(): Promise<PublicKey> {
+  public get bytecodePK(): PublicKey {
     return this._bytecodePK;
   }
-  private _bytecodePK: Promise<PublicKey>;
 
   public constructor(
-    idl: IDL,
-    programId: Address,
-    seed: string,
-    provider = getProvider(),
+    private _idl: IDL,
+    private _bytecodePK: PublicKey,
+    private _provider = getProvider(),
     golanaLoaderId: Address = LOADER_ID,
   ) {
-    programId = translateAddress(programId);
-    golanaLoaderId = translateAddress(golanaLoaderId);
-
-    // Fields.
-    this._idl = idl;
-    this._provider = provider;
-    this._programId = programId;
-    this._golanaLoader = new AnchorProgram<Loader>(LoaderIDL, golanaLoaderId);
-    this._bytecodePK = PublicKey.createWithSeed(provider.publicKey as PublicKey, seed, golanaLoaderId);
+    this._golanaLoader = new AnchorProgram<Loader>(LoaderIDL, translateAddress(golanaLoaderId), _provider);
 
     this.methods = Object.fromEntries(
-      idl.instructions.map(idlIx => [
+      _idl.instructions.map(idlIx => [
         idlIx.name,
         MethodsBuilderFactory.build<IDL, typeof idlIx>(
           this._golanaLoader,
-          this._bytecodePK,
+          _bytecodePK,
           idlIx
         )
       ])
     ) as unknown as MethodsNamespace<IDL>;
   }
 
+  static createByteCodePubKey(name: string, provider = getProvider(), golanaLoaderId: Address = LOADER_ID) {
+    return PublicKey.createWithSeed(provider.publicKey as PublicKey, name, translateAddress(golanaLoaderId));
+  }
+
   async findAddr(seed: string) {
     let buf: Buffer | Uint8Array;
-    const bytecodePK = await this._bytecodePK;
 
     if (typeof crypto !== "undefined") {
-      const bytecodeBuf = bytecodePK.toBytes();
+      const bytecodeBuf = this._bytecodePK.toBytes();
       const seedBuf = utils.bytes.utf8.encode(seed);
       const fullSeed = new Uint8Array(bytecodeBuf.length + seedBuf.length);
       fullSeed.set(bytecodeBuf);
@@ -110,7 +93,7 @@ export class Program<IDL extends Idl = Idl> {
       buf = new Uint8Array(hash);
     } else {
       const crypto = await import("node:crypto");
-      const fullSeed = Buffer.concat([bytecodePK.toBuffer(), Buffer.from(utils.bytes.utf8.encode(seed))]);
+      const fullSeed = Buffer.concat([this._bytecodePK.toBuffer(), Buffer.from(utils.bytes.utf8.encode(seed))]);
       buf = crypto.createHash("sha256").update(fullSeed).digest();
     }
 
@@ -121,7 +104,7 @@ export class Program<IDL extends Idl = Idl> {
 export class MethodsBuilderFactory {
   public static build<IDL extends Idl, I extends AllInstructions<IDL>>(
     loader: AnchorProgram<Loader>,
-    bytecodePK: Promise<PublicKey>,
+    bytecodePK: PublicKey,
     idlIx: AllInstructions<IDL>
   ): MethodsFn<IDL, I, MethodsBuilder<IDL, I>> {
     return (...args) =>
@@ -139,7 +122,7 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
 
   constructor(
     loader: AnchorProgram<Loader>,
-    private _bytecodePK: Promise<PublicKey>,
+    private _bytecodePK: PublicKey,
     private _idlIx: IdlInstruction,
     args: ArgsTuple<I["args"], IdlTypes<IDL>>,
   ) {
@@ -191,7 +174,7 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
       }
     }
 
-    return this._exec.remainingAccounts(accs);
+    return this._exec.accounts({ bytecode: this._bytecodePK }).remainingAccounts(accs);
   }
 
   public accountsStrict(
@@ -223,30 +206,25 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
   }
 
   public async rpc(options?: ConfirmOptions) {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).rpc(options);
+    return this._exec.rpc(options);
   }
 
   public async rpcAndKeys(options?: ConfirmOptions) {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).rpcAndKeys(options);
+    return this._exec.rpcAndKeys(options);
   }
 
   public async view(options?: ConfirmOptions) {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).view(options);
+    return this._exec.view(options);
   }
 
   public async simulate(
     options?: ConfirmOptions
   ) {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).simulate(options);
+    return this._exec.simulate(options);
   }
 
   public async instruction() {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).instruction();
+    return this._exec.instruction();
   }
 
   /**
@@ -254,13 +232,11 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
    * const { pubkeys, instructions } = await prepare();
    */
   public async prepare() {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).prepare();
+    return this._exec.prepare();
   }
 
   public async transaction() {
-    const bytecode = await this._bytecodePK;
-    return this._exec.accounts({ bytecode }).transaction();
+    return this._exec.transaction();
   }
 }
 

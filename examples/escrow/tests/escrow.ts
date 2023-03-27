@@ -1,10 +1,11 @@
 import dns from "node:dns";
 import * as anchor from "@project-serum/anchor";
-import { initGolana, findAddr, exec } from "golana";
-import { PublicKey, SystemProgram, Transaction, AccountMeta } from '@solana/web3.js';
+import { IDL, Escrow } from '../target/escrow_idl.js';
+import { Program } from "golana";
+import { PublicKey, SystemProgram, Transaction, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
+import BN from 'bn.js';
 import { assert } from "chai";
-import { BinaryWriter } from 'borsh';
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -14,12 +15,7 @@ describe("escrow", async() => {
     const provider = anchor.AnchorProvider.local();
     anchor.setProvider(provider);
 
-    // Initialize the golana program.
-    const golana = initGolana("localnet");
-
-    const authorPK = provider.publicKey;
-    const seed = "escrow";
-    const bytecodePK = await anchor.web3.PublicKey.createWithSeed(authorPK, seed, golana.programId);
+    const escrow = new Program<Escrow>(IDL, await Program.createByteCodePubKey("escrow"));
 
     const takerAmount = 1001;
     const initializerAmount = 502;
@@ -71,7 +67,7 @@ describe("escrow", async() => {
               newAccountPubkey: escrowAccount.publicKey,
               lamports: escrowAccountLamports,
               space: escrowAccountSpace,
-              programId: golana.programId,
+              programId: escrow.golanaLoader.programId,
             })
           );
           return tx;
@@ -152,56 +148,8 @@ describe("escrow", async() => {
     });
 
     it("Initialize escrow", async () => {
-      ([vault_account_pda, vault_account_bump] = await findAddr(golana, bytecodePK, "token-seed"));
-      ([vault_authority_pda, vault_authority_bump] = await findAddr(golana, bytecodePK, "escrow"));
-
-      const accounts: AccountMeta[] = [
-        {
-          "pubkey": initializerMainAccount.publicKey,
-          "isWritable": true,
-          "isSigner": true
-        },
-        {
-          "pubkey": mintA,
-          "isWritable": false,
-          "isSigner": false
-        },
-        {
-          "pubkey": vault_account_pda,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": initializerTokenAccountA,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": initializerTokenAccountB,
-          "isWritable": false,
-          "isSigner": false
-        },
-        {
-          "pubkey": escrowAccount.publicKey,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": anchor.web3.SystemProgram.programId,
-          "isWritable": false,
-          "isSigner": false
-        },
-        {
-          "pubkey": anchor.web3.SYSVAR_RENT_PUBKEY,
-          "isWritable": false,
-          "isSigner": false
-        },
-        {
-          "pubkey": TOKEN_PROGRAM_ID,
-          "isWritable": false,
-          "isSigner": false
-        }
-      ];
+      ([vault_account_pda, vault_account_bump] = await escrow.findAddr("token-seed"));
+      ([vault_authority_pda, vault_authority_bump] = await escrow.findAddr("escrow"));
 
       console.log(initializerMainAccount.publicKey.toString());
       console.log(vault_account_pda.toString(), vault_account_bump);
@@ -209,12 +157,32 @@ describe("escrow", async() => {
       console.log(initializerTokenAccountA.toString());
       console.log(escrowAccount.publicKey.toString());
 
-      const writer = new BinaryWriter();
-      writer.writeU8(vault_account_bump);
-      writer.writeU64(initializerAmount);
-      writer.writeU64(takerAmount);
-      const buf = writer.toArray();
-      const result = await exec(golana, bytecodePK, 'IxInit', accounts, buf, [initializerMainAccount]);
+      await escrow.methods.IxInit(
+        vault_account_bump,
+        new BN(initializerAmount),
+        new BN(takerAmount)
+      )
+        .accounts({
+          initializer: initializerMainAccount.publicKey,
+          mint: mintA,
+          vaultAccount: vault_account_pda,
+          initializerDepositTokenAccount: initializerTokenAccountA,
+          initializerReceiveTokenAccount: initializerTokenAccountB,
+          escrowAccount: escrowAccount.publicKey,
+          systemProgram: SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .preInstructions([
+            ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+            ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
+        ])
+        .signers([initializerMainAccount])
+        .rpc({ skipPreflight: true });
+
+      console.log(1111111111);
+      const result = await escrow.golanaLoader.account.golBytecode.fetch(escrow.bytecodePK);
+
       assert.ok(result.finalized);
 
       const _vault = await getAccount(provider.connection, vault_account_pda);
@@ -224,63 +192,29 @@ describe("escrow", async() => {
     });
 
     it("Exchange", async () => {
-      const accounts = [
-        {
-          "pubkey": takerMainAccount.publicKey,
-          "isWritable": false,
-          "isSigner": true
-        },
-        {
-          "pubkey": takerTokenAccountB,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": takerTokenAccountA,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": initializerMainAccount.publicKey,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": initializerTokenAccountA,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": initializerTokenAccountB,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": escrowAccount.publicKey,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": vault_account_pda,
-          "isWritable": true,
-          "isSigner": false
-        },
-        {
-          "pubkey": vault_authority_pda,
-          "isWritable": false,
-          "isSigner": false
-        },
-        {
-          "pubkey": TOKEN_PROGRAM_ID,
-          "isWritable": false,
-          "isSigner": false
-        }
-      ];
+      await escrow.methods.IxExchange(vault_authority_bump)
+        .accounts({
+          taker: takerMainAccount.publicKey,
+          takerDepositTokenAccount: takerTokenAccountB,
+          takerReceiveTokenAccount: takerTokenAccountA,
+          initializer: initializerMainAccount.publicKey,
+          initializerDepositTokenAccount: initializerTokenAccountA,
+          initializerReceiveTokenAccount: initializerTokenAccountB,
+          escrowAccount: escrowAccount.publicKey,
+          vaultAccount: vault_account_pda,
+          vaultAuthority: vault_authority_pda,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .preInstructions([
+          ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
+        ])
+        .signers([takerMainAccount])
+        .rpc({ skipPreflight: true });
 
-      const writer = new BinaryWriter();
-      writer.writeU8(vault_authority_bump);
-      const buf = writer.toArray();
-      await exec(golana, bytecodePK, "IxExchange", accounts, buf, [takerMainAccount]);
+      const result = await escrow.golanaLoader.account.golBytecode.fetch(escrow.bytecodePK);
+
+      assert.ok(result.finalized);
     });
 
     // it("Cancel", async () => {

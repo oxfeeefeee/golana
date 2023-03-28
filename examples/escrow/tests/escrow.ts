@@ -9,7 +9,7 @@ import { assert } from "chai";
 
 dns.setDefaultResultOrder("ipv4first");
 
-describe("escrow", async() => {
+describe("escrow", async () => {
   try {
     // Configure the client to use the local cluster.
     const provider = anchor.AnchorProvider.local();
@@ -174,8 +174,8 @@ describe("escrow", async() => {
           tokenProgram: TOKEN_PROGRAM_ID
         })
         .preInstructions([
-            ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-            ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
+          ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
         ])
         .signers([initializerMainAccount])
         .rpc({ skipPreflight: true });

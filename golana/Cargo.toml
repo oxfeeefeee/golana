@@ -13,5 +13,5 @@ borsh = "0.9.3"
 
 [dependencies.goscript-vm] 
 path = "../../goscript/vm"
-features = ["btree_map"]
+features = ["btree_map", "serde_borsh"]
 version = "0.1.0"

@@ -21,10 +21,6 @@ impl AccessMode {
         }
     }
 
-    pub fn is_writable(&self) -> bool {
-        self.get_data_index().is_some()
-    }
-
     pub fn get_data_index(&self) -> Option<usize> {
         match self {
             Self::Initialize(i) | Self::ReadOnly(i) | Self::Mutable(i) => Some(*i),
@@ -37,6 +33,7 @@ impl AccessMode {
 pub struct AccMeta {
     pub name: String,
     pub is_signer: bool,
+    pub is_mut: bool,
     pub access_mode: AccessMode,
 }
 
@@ -79,22 +76,18 @@ impl IxMeta {
         while i < fields.len() {
             let meta = &fields[i].meta;
             let name = &fields[i].name;
+            let tags = &fields[i].lookup_tag("golana");
+            let (is_signer, is_mut) = Self::is_signer_or_mut(tags);
             if meta.key == account.key {
                 if meta.ptr_depth != 1 {
                     return Err(error!(GolError::NonPointerAccountInfo));
                 }
-                let signer_postfix = "_signer";
-                let is_signer = name.ends_with(signer_postfix);
-                let name = if is_signer {
-                    &name[..name.len() - signer_postfix.len()]
-                } else {
-                    name
-                };
                 accounts.push((
                     AccMeta {
                         // todo: proper parsing
                         name: name.to_owned(),
                         is_signer,
+                        is_mut,
                         access_mode: AccessMode::None,
                     },
                     &fields[i].name,
@@ -113,19 +106,22 @@ impl IxMeta {
                 let mut found = false;
                 for (index, acc) in accounts.iter_mut().enumerate() {
                     if field.name.starts_with(acc.1) {
-                        let mode_name = &field.name[acc.1.len()..];
-                        let data_index = accounts_data.len();
-                        if let Some(mode) = AccessMode::try_with_name(mode_name, data_index) {
-                            if acc.0.access_mode != AccessMode::None {
-                                return Err(error!(GolError::DuplicatedDataDeclare));
-                            }
-                            acc.0.access_mode = mode;
-                            if field.meta.ptr_depth != 1 {
-                                return Err(error!(GolError::NonPointerDataDeclare));
-                            }
-                            accounts_data.push((index, field.meta.unptr_to()));
-                            found = true;
+                        let post_fix = &field.name[acc.1.len()..];
+                        if post_fix != "_data" {
+                            return Err(error!(GolError::AccountNamePrefixReserved));
                         }
+                        let data_index = accounts_data.len();
+                        let mode =
+                            Self::get_data_access_mode(&field.lookup_tag("golana"), data_index)?;
+                        if acc.0.access_mode != AccessMode::None {
+                            return Err(error!(GolError::DuplicatedDataDeclare));
+                        }
+                        acc.0.access_mode = mode;
+                        if field.meta.ptr_depth != 1 {
+                            return Err(error!(GolError::NonPointerDataDeclare));
+                        }
+                        accounts_data.push((index, field.meta.unptr_to()));
+                        found = true;
                         break;
                     }
                 }
@@ -159,6 +155,31 @@ impl IxMeta {
             accounts_data,
             args,
         })
+    }
+
+    fn get_data_access_mode(tag: &Option<String>, index: usize) -> Result<AccessMode> {
+        if let Some(tag) = tag {
+            let tag = tag.trim();
+            if tag == "init" {
+                Ok(AccessMode::Initialize(index))
+            } else if tag == "mut" {
+                Ok(AccessMode::Mutable(index))
+            } else {
+                Err(error!(GolError::BadDataDeclareTag))
+            }
+        } else {
+            Ok(AccessMode::ReadOnly(index))
+        }
+    }
+
+    fn is_signer_or_mut(tag: &Option<String>) -> (bool, bool) {
+        if let Some(tag) = tag {
+            let tags: Vec<&str> = tag.split(',').map(|x| x.trim()).collect();
+            let is_signer = tags.contains(&"signer");
+            let is_mut = tags.contains(&"mut");
+            return (is_signer, is_mut);
+        }
+        (false, false)
     }
 }
 

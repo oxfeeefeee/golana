@@ -54,7 +54,7 @@ fn get_account_idl(acc: &golana::AccMeta) -> idl::IdlAccount {
     idl::IdlAccount {
         name: acc.name.clone(),
         is_signer: acc.is_signer,
-        is_mut: true,
+        is_mut: acc.is_mut,
         docs: None,
         pda: None,
     }

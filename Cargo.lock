@@ -1452,8 +1452,6 @@ dependencies = [
 name = "goscript-engine"
 version = "0.1.0"
 dependencies = [
- "base64 0.13.1",
- "borsh",
  "futures-lite",
  "goscript-codegen",
  "goscript-parser",

@@ -12,7 +12,7 @@ pub fn test(config: &GolanaConfig) -> Result<()> {
         std::process::Command::new(program)
             .args(args)
             .env("ANCHOR_PROVIDER_URL", provider.cluster.to_string())
-            .env("ANCHOR_WALLET", provider.wallet.to_string())
+            .env("ANCHOR_WALLET", &*shellexpand::tilde(&provider.wallet))
             .env("GOLANA_LOADER_ID", provider.loader_id.to_string())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())

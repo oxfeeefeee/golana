@@ -1,7 +1,7 @@
 import dns from "node:dns";
 import * as anchor from "@project-serum/anchor";
 import { IDL, Escrow } from '../target/escrow_idl.js';
-import { Program } from "golana";
+import { Program, initFromEnv } from "golana";
 import { PublicKey, SystemProgram, Transaction, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
 import BN from 'bn.js';
@@ -11,9 +11,7 @@ dns.setDefaultResultOrder("ipv4first");
 
 describe("escrow", async () => {
   try {
-    // Configure the client to use the local cluster.
-    const provider = anchor.AnchorProvider.local();
-    anchor.setProvider(provider);
+    let provider = initFromEnv();
 
     const escrow = new Program<Escrow>(IDL, await Program.createByteCodePubKey("escrow"));
 

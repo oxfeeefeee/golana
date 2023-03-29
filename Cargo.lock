@@ -1428,6 +1428,7 @@ dependencies = [
  "golana",
  "goscript-engine",
  "goscript-vm",
+ "heck 0.3.3",
  "loader",
  "serde",
  "serde_derive",

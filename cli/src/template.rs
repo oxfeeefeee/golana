@@ -1,4 +1,7 @@
+use anchor_syn::idl::Idl;
+use anyhow::Result;
 use dirs;
+use heck::{CamelCase, MixedCase};
 use std::path::PathBuf;
 
 pub fn golana_toml(name: &str) -> String {
@@ -71,4 +74,23 @@ fn get_wallet_path() -> String {
     let mut wallet_path = home_dir.to_str().unwrap().to_string();
     wallet_path.push_str("/.config/solana/id.json");
     wallet_path
+}
+
+// Taken from anchor-syn/src/idl.rs
+pub fn idl_ts(idl: &Idl) -> Result<String> {
+    let mut idl = idl.clone();
+    for acc in idl.accounts.iter_mut() {
+        acc.name = acc.name.to_mixed_case();
+    }
+    let idl_json = serde_json::to_string_pretty(&idl)?;
+    Ok(format!(
+        r#"export type {} = {};
+
+export const IDL: {} = {};
+"#,
+        idl.name.to_camel_case(),
+        idl_json,
+        idl.name.to_camel_case(),
+        idl_json
+    ))
 }

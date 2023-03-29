@@ -126,7 +126,7 @@ func (ix *IxExchange) Process() {
 }
 
 type IxCancel struct {
-	initializer                    *AccountInfo `golana:"singer, mut"`
+	initializer                    *AccountInfo `golana:"signer, mut"`
 	initializerDepositTokenAccount *AccountInfo `golana:"mut"`
 	vaultAccount                   *AccountInfo `golana:"mut"`
 	vaultAuthority                 *AccountInfo

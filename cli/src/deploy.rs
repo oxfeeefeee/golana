@@ -8,7 +8,7 @@ use std::path::Path;
 
 // deploy the project
 pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> {
-    let program = new_vm_program(&config.provider)?;
+    let program = new_vm_program(config.get_provider()?)?;
     let seed = &config.project.name;
     let space = config.project.space;
     let rpc_client = program.rpc();

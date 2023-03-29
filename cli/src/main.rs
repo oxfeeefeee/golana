@@ -9,6 +9,7 @@ mod deploy;
 mod idl;
 mod init;
 mod template;
+mod test;
 mod util;
 
 #[derive(Parser)]
@@ -56,10 +57,7 @@ enum Commands {
         name: String,
     },
     // /// Run the test script
-    // Test {
-    //     #[arg(short, long)]
-    //     path: Option<PathBuf>,
-    // },
+    Test {},
 }
 
 fn main() {
@@ -81,16 +79,17 @@ fn processor() -> Result<()> {
         let cfg = config::read_config(&path)?;
         match &cli.command.unwrap() {
             Commands::Build { out_name } => build::build(
-                out_name.as_ref().unwrap_or(&cfg.project.name),
+                out_name.as_ref().map(|x| &**x),
                 &cfg.project.out_dir,
+                &cfg.project.name,
             ),
             Commands::Airdrop { amount } => {
                 println!(
                     "Airdrop {} lamports to wallet at {}",
                     amount.unwrap(),
-                    cfg.provider.wallet
+                    cfg.get_provider()?.wallet
                 );
-                airdrop::airdrop(amount.unwrap(), &cfg.provider)
+                airdrop::airdrop(amount.unwrap(), cfg.get_provider()?)
             }
             Commands::Deploy { path, force } => {
                 let path = path.clone().unwrap_or_else(|| {
@@ -103,6 +102,11 @@ fn processor() -> Result<()> {
                 print!("Deploying from path: {}\n", path.to_string_lossy());
                 deploy::deploy(&cfg, &path, *force)?;
                 print!("Deployed!\n");
+                Ok(())
+            }
+            Commands::Test {} => {
+                println!("Testing");
+                test::test(&cfg)?;
                 Ok(())
             }
             Commands::Init { .. } => {

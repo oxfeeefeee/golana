@@ -12,15 +12,6 @@ pub enum AccessMode {
 }
 
 impl AccessMode {
-    pub fn try_with_name(name: &str, index: usize) -> Option<AccessMode> {
-        match name {
-            "_data" => Some(Self::ReadOnly(index)),
-            "_dataInit" => Some(Self::Initialize(index)),
-            "_dataMut" => Some(Self::Mutable(index)),
-            _ => None,
-        }
-    }
-
     pub fn get_data_index(&self) -> Option<usize> {
         match self {
             Self::Initialize(i) | Self::ReadOnly(i) | Self::Mutable(i) => Some(*i),

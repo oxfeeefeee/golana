@@ -18,6 +18,7 @@ solana-sdk = "~1.10.29"
 dirs = "3.0"
 serde_json = "1.0"
 anchor-syn = { version = "0.25.0", features = ["idl"] }
+heck = "0.3.1"
 
 [dependencies.goscript-engine] 
 path = "../../goscript/engine"

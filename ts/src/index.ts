@@ -1,11 +1,19 @@
 import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
+import * as anchor from "@project-serum/anchor";
 import { BinaryWriter } from 'borsh';
 import { IDL as LoaderIDL, Loader } from "./loader.js";
 import { Idl, IdlInstruction, IdlAccountItem, IdlAccounts, isIdlAccounts } from "./idl.js";
 import { AllInstructions, MethodsFn, MakeMethodsNamespace, ArgsTuple, IdlTypes } from './types.js';
 
-const LOADER_ID = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP";
+let LOADER_ID = "Not initialized!!!";
+
+export function initFromEnv(): Provider {
+  LOADER_ID = process.env.GOLANA_LOADER_ID as string;
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  return provider;
+}
 
 export type MethodsNamespace<
   IDL extends Idl = Idl,

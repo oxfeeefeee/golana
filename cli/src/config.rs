@@ -1,4 +1,6 @@
+use anyhow::{anyhow, Result};
 use serde_derive::Deserialize;
+use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -7,7 +9,8 @@ pub use std::env::current_dir;
 #[derive(Debug, Deserialize)]
 pub struct GolanaConfig {
     pub project: Project,
-    pub provider: Provider,
+    pub providers: HashMap<String, Provider>,
+    pub test: Test,
 }
 
 #[derive(Debug, Deserialize)]
@@ -15,6 +18,7 @@ pub struct Project {
     pub name: String,
     pub space: u64,
     pub out_dir: PathBuf,
+    pub provider: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -22,6 +26,28 @@ pub struct Provider {
     pub cluster: String,
     pub wallet: String,
     pub golana_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Test {
+    pub test_provider: String,
+    pub script: String,
+}
+
+impl GolanaConfig {
+    pub fn get_provider(&self) -> Result<&Provider> {
+        self.get_provider_impl(&self.project.provider)
+    }
+
+    pub fn get_test_provider(&self) -> Result<&Provider> {
+        self.get_provider_impl(&self.test.test_provider)
+    }
+
+    fn get_provider_impl(&self, key: &str) -> Result<&Provider> {
+        self.providers
+            .get(key)
+            .ok_or_else(|| (anyhow!("Couldn't find provider config with key {:?}", key)))
+    }
 }
 
 pub fn get_full_path(dir: &Path) -> Option<PathBuf> {

@@ -3,7 +3,7 @@ use anyhow::{anyhow, Result};
 use golana;
 use goscript_vm::types::{Meta, MetadataObjs, MetadataType, ValueType};
 
-pub fn get_idl(tx: &golana::TxMeta, metas: &MetadataObjs) -> Result<idl::Idl> {
+pub fn get_idl(tx: &golana::TxMeta, metas: &MetadataObjs, proj_name: &str) -> Result<idl::Idl> {
     let instructions = tx
         .instructions
         .iter()
@@ -11,7 +11,7 @@ pub fn get_idl(tx: &golana::TxMeta, metas: &MetadataObjs) -> Result<idl::Idl> {
         .collect::<Result<Vec<idl::IdlInstruction>>>()?;
     Ok(idl::Idl {
         version: "0.0.0".to_owned(),
-        name: "unnamed".to_owned(),
+        name: proj_name.to_owned(),
         docs: None,
         instructions,
         accounts: vec![],

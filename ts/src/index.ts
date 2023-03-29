@@ -8,7 +8,7 @@ import { AllInstructions, MethodsFn, MakeMethodsNamespace, ArgsTuple, IdlTypes }
 
 let LOADER_ID = "Not initialized!!!";
 
-export function initFromEnv(): Provider {
+export function initFromEnv(): anchor.AnchorProvider {
   LOADER_ID = process.env.GOLANA_LOADER_ID as string;
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);

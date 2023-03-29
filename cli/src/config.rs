@@ -25,7 +25,7 @@ pub struct Project {
 pub struct Provider {
     pub cluster: String,
     pub wallet: String,
-    pub golana_id: String,
+    pub loader_id: String,
 }
 
 #[derive(Debug, Deserialize)]

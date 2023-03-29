@@ -13,7 +13,7 @@ pub fn test(config: &GolanaConfig) -> Result<()> {
             .args(args)
             .env("ANCHOR_PROVIDER_URL", provider.cluster.to_string())
             .env("ANCHOR_WALLET", provider.wallet.to_string())
-            .env("GOLANA_LOADER_ID", provider.golana_id.to_string())
+            .env("GOLANA_LOADER_ID", provider.loader_id.to_string())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())
             .output()

@@ -12,6 +12,6 @@ pub fn new_vm_program(provider: &Provider) -> Result<Program> {
     let payer =
         read_keypair_file(&*shellexpand::tilde(&provider.wallet)).expect("Bad keypair file");
     let client = Client::new_with_options(cluster, Rc::new(payer), CommitmentConfig::confirmed());
-    let program = client.program(Pubkey::from_str(&provider.golana_id)?);
+    let program = client.program(Pubkey::from_str(&provider.loader_id)?);
     Ok(program)
 }

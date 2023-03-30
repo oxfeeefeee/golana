@@ -96,9 +96,11 @@ impl IxMeta {
             if field.meta.ptr_depth == 1 {
                 let mut found = false;
                 for (index, acc) in accounts.iter_mut().enumerate() {
-                    if field.name.starts_with(acc.1) {
-                        let post_fix = &field.name[acc.1.len()..];
-                        if post_fix != "_data" {
+                    let mut prefix = acc.1.to_owned();
+                    prefix.push('_');
+                    if field.name.starts_with(&prefix) {
+                        let post_fix = &field.name[prefix.len()..];
+                        if post_fix != "data" {
                             return Err(error!(GolError::AccountNamePrefixReserved));
                         }
                         let data_index = accounts_data.len();

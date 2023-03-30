@@ -1,3 +1,4 @@
+import dns from "node:dns";
 import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
@@ -9,7 +10,11 @@ import { AllInstructions, MethodsFn, MakeMethodsNamespace, ArgsTuple, IdlTypes }
 let LOADER_ID = "Not initialized!!!";
 
 export function initFromEnv(): anchor.AnchorProvider {
+  // To support IPv4 urls
+  dns.setDefaultResultOrder("ipv4first");
+
   LOADER_ID = process.env.GOLANA_LOADER_ID as string;
+
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   return provider;
@@ -143,10 +148,15 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
     args.forEach((arg, i) => {
       const type = this._idlIx.args[i].type;
 
+      // todo: support all types
       if (type === "u8") {
         writer.writeU8(arg as number);
       } else if (type === "u64") {
         writer.writeU64(arg as number);
+      } else if (type === "string") {
+        writer.writeString(arg as string);
+      } else {
+        throw new Error(`unsupported type ${type}`);
       }
     });
 

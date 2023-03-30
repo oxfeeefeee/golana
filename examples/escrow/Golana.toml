@@ -10,7 +10,7 @@ wallet = "~/.config/solana/id.json"
 loader_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
 
 [providers.testnet]
-cluster = "testnet"
+cluster = "https://api.testnet.solana.com"
 wallet = "~/.config/solana/id.json"
 loader_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
 

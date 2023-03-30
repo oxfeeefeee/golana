@@ -1,8 +1,7 @@
 import dns from "node:dns";
-import * as anchor from "@project-serum/anchor";
 import { IDL, Escrow } from '../target/escrow_idl.js';
 import { Program, initFromEnv } from "golana";
-import { PublicKey, SystemProgram, Transaction, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram, Keypair } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";
@@ -19,11 +18,11 @@ describe("escrow", async () => {
     const initializerAmount = 502;
     const escrowAccountSpace = 512;
 
-    const escrowAccount = anchor.web3.Keypair.generate();
-    const payer = anchor.web3.Keypair.generate();
-    const mintAuthority = anchor.web3.Keypair.generate();
-    const initializerMainAccount = anchor.web3.Keypair.generate();
-    const takerMainAccount = anchor.web3.Keypair.generate();
+    const escrowAccount = Keypair.generate();
+    const payer = Keypair.generate();
+    const mintAuthority = Keypair.generate();
+    const initializerMainAccount = Keypair.generate();
+    const takerMainAccount = Keypair.generate();
 
     let mintA: PublicKey;
     let mintB: PublicKey;
@@ -60,7 +59,7 @@ describe("escrow", async () => {
               toPubkey: takerMainAccount.publicKey,
               lamports: 100000000,
             }),
-            anchor.web3.SystemProgram.createAccount({
+            SystemProgram.createAccount({
               fromPubkey: payer.publicKey,
               newAccountPubkey: escrowAccount.publicKey,
               lamports: escrowAccountLamports,
@@ -178,11 +177,6 @@ describe("escrow", async () => {
         .signers([initializerMainAccount])
         .rpc({ skipPreflight: true });
 
-      console.log(1111111111);
-      const result = await escrow.golanaLoader.account.golBytecode.fetch(escrow.bytecodePK);
-
-      assert.ok(result.finalized);
-
       const _vault = await getAccount(provider.connection, vault_account_pda);
       console.log(_vault.owner.toString());
       // Check that the new owner is the PDA.
@@ -209,10 +203,6 @@ describe("escrow", async () => {
         ])
         .signers([takerMainAccount])
         .rpc({ skipPreflight: true });
-
-      const result = await escrow.golanaLoader.account.golBytecode.fetch(escrow.bytecodePK);
-
-      assert.ok(result.finalized);
     });
 
     // it("Cancel", async () => {

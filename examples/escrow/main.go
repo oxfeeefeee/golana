@@ -37,8 +37,8 @@ type IxInit struct {
 	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
 	// Use the corresponding account name with a _data suffix,
 	// and add the `golana:"init"` or `golana:"mut"` tag to the field:
-	// - `golana:"init"` for the data that is initialized by the instruction
-	// - `golana:"mut"` for the data that is written by the instruction
+	// - `golana:"init"` for the data that will be initialized by the instruction
+	// - `golana:"mut"` for the data that will be written by the instruction
 	escrowAccount_data *EscrowAccountData `golana:"init"`
 
 	// Finally, list all the instruction parameters

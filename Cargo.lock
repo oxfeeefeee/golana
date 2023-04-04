@@ -1406,12 +1406,81 @@ dependencies = [
 ]
 
 [[package]]
+name = "go-codegen"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d4897f8c438f60c55251807319141d8f16ac43cf59c1a3f6e0b53d7c41a3935"
+dependencies = [
+ "go-parser",
+ "go-types",
+ "go-vm",
+]
+
+[[package]]
+name = "go-engine"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e8ce75e76af64bf817a05cd802614097caf7a840d9c5db82741407071398256"
+dependencies = [
+ "futures-lite",
+ "go-codegen",
+ "go-parser",
+ "go-pmacro",
+ "go-types",
+ "go-vm",
+ "lazy_static",
+ "zip",
+]
+
+[[package]]
+name = "go-parser"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4abf0f576e12323956aa325677645962ba4e94be60bdcd8e0995f8ad65676ca0"
+
+[[package]]
+name = "go-pmacro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ece6d5ed3cc0d93f6fbab739e85a39fb51d872ff7a3fe4e52cd4b0627354ce0b"
+dependencies = [
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.103",
+]
+
+[[package]]
+name = "go-types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ca6abb306bc27f4b7a80e28695cf703353868754f648b3a28cdcb9da9e4e507"
+dependencies = [
+ "go-parser",
+ "num-bigint 0.4.3",
+ "num-rational 0.4.1",
+ "num-traits",
+ "ordered-float",
+]
+
+[[package]]
+name = "go-vm"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0c4c285b9b5d187e08b697432561b2bea25c8f80b2c57e3721f2fe9b1023b1e"
+dependencies = [
+ "borsh",
+ "go-parser",
+ "go-pmacro",
+ "ordered-float",
+]
+
+[[package]]
 name = "golana"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "borsh",
- "goscript-vm",
+ "go-vm",
  "solana-program",
 ]
 
@@ -1425,9 +1494,9 @@ dependencies = [
  "borsh",
  "clap 4.0.19",
  "dirs 3.0.2",
+ "go-engine",
+ "go-vm",
  "golana",
- "goscript-engine",
- "goscript-vm",
  "heck 0.3.3",
  "loader",
  "serde",
@@ -1438,63 +1507,6 @@ dependencies = [
  "toml",
  "walkdir",
  "zip",
-]
-
-[[package]]
-name = "goscript-codegen"
-version = "0.1.0"
-dependencies = [
- "goscript-parser",
- "goscript-types",
- "goscript-vm",
-]
-
-[[package]]
-name = "goscript-engine"
-version = "0.1.0"
-dependencies = [
- "futures-lite",
- "goscript-codegen",
- "goscript-parser",
- "goscript-pmacro",
- "goscript-types",
- "goscript-vm",
- "lazy_static",
- "zip",
-]
-
-[[package]]
-name = "goscript-parser"
-version = "0.1.0"
-
-[[package]]
-name = "goscript-pmacro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2 1.0.47",
- "quote 1.0.21",
- "syn 1.0.103",
-]
-
-[[package]]
-name = "goscript-types"
-version = "0.1.0"
-dependencies = [
- "goscript-parser",
- "num-bigint 0.4.3",
- "num-rational 0.4.1",
- "num-traits",
- "ordered-float",
-]
-
-[[package]]
-name = "goscript-vm"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "goscript-parser",
- "goscript-pmacro",
- "ordered-float",
 ]
 
 [[package]]
@@ -1916,8 +1928,8 @@ dependencies = [
  "anchor-lang",
  "anyhow",
  "borsh",
+ "go-vm",
  "golana",
- "goscript-vm",
  "smalloc",
  "solana-program",
  "spl-token",
@@ -3072,9 +3084,8 @@ dependencies = [
 [[package]]
 name = "smalloc"
 version = "0.1.2"
-dependencies = [
- "solana-program",
-]
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe4dc8671765eaefc12e36c40a397e963149dfc4aac7c727ba42db1827408298"
 
 [[package]]
 name = "smallvec"

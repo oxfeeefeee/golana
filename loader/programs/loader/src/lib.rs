@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
+use go_vm::Bytecode;
 use golana::*;
-use goscript_vm::Bytecode;
 
 declare_id!("6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP");
 

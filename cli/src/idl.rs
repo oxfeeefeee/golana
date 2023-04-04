@@ -1,7 +1,7 @@
 use anchor_syn::idl;
 use anyhow::{anyhow, Result};
+use go_vm::types::{Meta, MetadataObjs, MetadataType, ValueType};
 use golana;
-use goscript_vm::types::{Meta, MetadataObjs, MetadataType, ValueType};
 
 pub fn get_idl(tx: &golana::TxMeta, metas: &MetadataObjs, proj_name: &str) -> Result<idl::Idl> {
     let instructions = tx

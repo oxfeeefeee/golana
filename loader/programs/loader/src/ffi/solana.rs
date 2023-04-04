@@ -1,8 +1,8 @@
 use crate::goscript::Instruction;
 use anchor_lang::prelude::*;
+use go_vm::types::*;
+use go_vm::*;
 use golana::*;
-use goscript_vm::types::*;
-use goscript_vm::*;
 use solana_program::{self, account_info::AccountInfo, program_pack::Pack, pubkey::Pubkey};
 use spl_token::{self, instruction::AuthorityType};
 use std::rc::Rc;

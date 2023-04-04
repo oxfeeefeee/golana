@@ -1,8 +1,8 @@
 use crate::{idl, template};
 use anyhow::{anyhow, Context, Result};
 use borsh::ser::BorshSerialize;
+use go_engine as gos;
 use golana;
-use goscript_engine as gos;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 

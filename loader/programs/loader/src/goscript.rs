@@ -1,9 +1,9 @@
 use crate::ffi::{fmt2, solana};
 use anchor_lang::prelude::*;
 use borsh::de::BorshDeserialize;
+use go_vm::types::GosValue;
+use go_vm::*;
 use golana::*;
-use goscript_vm::types::GosValue;
-use goscript_vm::*;
 use solana_program::account_info::AccountInfo;
 use std::cell::RefCell;
 
@@ -20,10 +20,10 @@ pub fn run(
     let ix = Instruction::new(key, &metas, accounts, id, &args)?;
     let p = std::ptr::addr_of!(ix) as usize;
 
-    let mut ffi = goscript_vm::FfiFactory::with_user_data(p);
+    let mut ffi = go_vm::FfiFactory::with_user_data(p);
     fmt2::Fmt2Ffi::register(&mut ffi);
     solana::SolanaFfi::register(&mut ffi);
-    goscript_vm::run(&bc, &ffi, None);
+    go_vm::run(&bc, &ffi, None);
 
     Ok(())
 }

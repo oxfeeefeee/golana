@@ -1,7 +1,7 @@
 use crate::errors::*;
 use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
-use goscript_vm::*;
+use go_vm::*;
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone, PartialEq, Eq)]
 pub enum AccessMode {

@@ -571,21 +571,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "golana"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "borsh",
- "goscript-vm",
- "solana-program",
-]
-
-[[package]]
-name = "goscript-parser"
+name = "go-parser"
 version = "0.1.0"
 
 [[package]]
-name = "goscript-pmacro"
+name = "go-pmacro"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -594,13 +584,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "goscript-vm"
+name = "go-vm"
 version = "0.1.0"
 dependencies = [
  "borsh",
- "goscript-parser",
- "goscript-pmacro",
+ "go-parser",
+ "go-pmacro",
  "ordered-float",
+]
+
+[[package]]
+name = "golana"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "borsh",
+ "go-vm",
+ "solana-program",
 ]
 
 [[package]]
@@ -764,8 +764,8 @@ dependencies = [
  "anchor-lang",
  "anyhow",
  "borsh",
+ "go-vm",
  "golana",
- "goscript-vm",
  "smalloc",
  "solana-program",
  "spl-token",

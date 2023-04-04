@@ -1,5 +1,5 @@
-use goscript_vm::types::*;
-use goscript_vm::*;
+use go_vm::types::*;
+use go_vm::*;
 use solana_program::msg;
 
 #[derive(Ffi)]

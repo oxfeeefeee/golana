@@ -573,10 +573,14 @@ dependencies = [
 [[package]]
 name = "go-parser"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4abf0f576e12323956aa325677645962ba4e94be60bdcd8e0995f8ad65676ca0"
 
 [[package]]
 name = "go-pmacro"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ece6d5ed3cc0d93f6fbab739e85a39fb51d872ff7a3fe4e52cd4b0627354ce0b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -586,6 +590,8 @@ dependencies = [
 [[package]]
 name = "go-vm"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0c4c285b9b5d187e08b697432561b2bea25c8f80b2c57e3721f2fe9b1023b1e"
 dependencies = [
  "borsh",
  "go-parser",
@@ -601,6 +607,20 @@ dependencies = [
  "borsh",
  "go-vm",
  "solana-program",
+]
+
+[[package]]
+name = "golana-loader"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anyhow",
+ "borsh",
+ "go-vm",
+ "golana",
+ "smalloc",
+ "solana-program",
+ "spl-token",
 ]
 
 [[package]]
@@ -755,20 +775,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67abfe149395e3aa1c48a2beb32b068e2334402df8181f818d3aee2b304c4f5d"
 dependencies = [
  "libsecp256k1-core",
-]
-
-[[package]]
-name = "loader"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anyhow",
- "borsh",
- "go-vm",
- "golana",
- "smalloc",
- "solana-program",
- "spl-token",
 ]
 
 [[package]]
@@ -1192,9 +1198,8 @@ dependencies = [
 [[package]]
 name = "smalloc"
 version = "0.1.2"
-dependencies = [
- "solana-program",
-]
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe4dc8671765eaefc12e36c40a397e963149dfc4aac7c727ba42db1827408298"
 
 [[package]]
 name = "smallvec"

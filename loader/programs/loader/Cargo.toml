@@ -1,12 +1,14 @@
 [package]
-name = "loader"
+name = "golana-loader"
 version = "0.1.0"
-description = "Created with Anchor"
 edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/oxfeeefeee/golana/"
+keywords = ["solana", "goscript"]
+description = "The Goscript bytecode loader created with Anchor"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "loader"
 
 [features]
 custom-heap = []

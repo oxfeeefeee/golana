@@ -41,7 +41,7 @@ version = "0.1.0"
 path = "../golana" 
 version = "0.1.0"
 
-[dependencies.loader] 
+[dependencies.golana-loader] 
 path = "../loader/programs/loader" 
 version = "0.1.0"
 

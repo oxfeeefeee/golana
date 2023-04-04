@@ -57,11 +57,11 @@ fn gol_initialize(program: &Program, bytecode_pk: &Pubkey, name: String) -> Resu
         .instruction(
             solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(256 * 1024),
         )
-        .accounts(loader::accounts::GolInitialize {
+        .accounts(golana_loader::accounts::GolInitialize {
             authority: program.payer(),
             bytecode: bytecode_pk.to_owned(),
         })
-        .args(loader::instruction::GolInitialize { handle: name })
+        .args(golana_loader::instruction::GolInitialize { handle: name })
         .send()?;
     Ok(())
 }
@@ -73,11 +73,11 @@ fn gol_clear(program: &Program, bytecode_pk: &Pubkey, name: String) -> Result<()
         .instruction(
             solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(256 * 1024),
         )
-        .accounts(loader::accounts::GolClear {
+        .accounts(golana_loader::accounts::GolClear {
             authority: program.payer(),
             bytecode: bytecode_pk.to_owned(),
         })
-        .args(loader::instruction::GolClear { handle: name })
+        .args(golana_loader::instruction::GolClear { handle: name })
         .send()?;
     Ok(())
 }
@@ -102,11 +102,11 @@ fn gol_write(program: &Program, bytecode_pk: &Pubkey, bytecode: &[u8]) -> Result
                     1400000,
                 ),
             )
-            .accounts(loader::accounts::GolWrite {
+            .accounts(golana_loader::accounts::GolWrite {
                 authority: program.payer(),
                 bytecode: bytecode_pk.to_owned(),
             })
-            .args(loader::instruction::GolWrite {
+            .args(golana_loader::instruction::GolWrite {
                 data: chunk.to_vec(),
             })
             .send()?;
@@ -125,11 +125,11 @@ fn gol_finalize(program: &Program, bytecode_pk: &Pubkey) -> Result<()> {
         .instruction(
             solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(1400000),
         )
-        .accounts(loader::accounts::GolFinalize {
+        .accounts(golana_loader::accounts::GolFinalize {
             authority: program.payer(),
             bytecode: bytecode_pk.to_owned(),
         })
-        .args(loader::instruction::GolFinalize {})
+        .args(golana_loader::instruction::GolFinalize {})
         .send()?;
     Ok(())
 }

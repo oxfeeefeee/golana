@@ -1,7 +1,7 @@
 {
   "name": "golana",
-  "version": "0.0.0",
-  "description": "Golana client",
+  "version": "0.1.0",
+  "description": "Golana client side library",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "solana"
   ],
   "author": "oxfeeefeee",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/oxfeeefeee/golana/issues"
   },

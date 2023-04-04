@@ -16,7 +16,7 @@ pub fn init(name: &str) -> Result<()> {
 
     fs::write(".eslintrc", template::eslintrc())?;
 
-    fs::write(".mocharc", template::mocharc())?;
+    fs::write(".mocharc.cjs", template::mocharc())?;
 
     fs::write("package.json", template::npm_package())?;
 

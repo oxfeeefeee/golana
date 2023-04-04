@@ -61,7 +61,6 @@ pub fn main_dot_go() -> String {
     r#"package main
 
     import (
-        "fmt2"
         . "solana"
     )
     
@@ -201,7 +200,7 @@ pub fn npm_package() -> String {
         "@solana/spl-token": "^0.3.5",
         "@solana/web3.js": "^1.74.0",
         "bn.js": "^5.2.1",
-        "toml": "^3.0.0"
+        "golana": "^0.1.0"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.1",

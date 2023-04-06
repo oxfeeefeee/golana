@@ -2,7 +2,7 @@ use crate::config::*;
 use anyhow::{Context, Result};
 
 pub fn test(config: &GolanaConfig) -> Result<()> {
-    let provider = config.get_test_provider()?;
+    let provider = config.get_provider()?;
     let cmd = &config.test.script;
 
     let mut args: Vec<&str> = cmd.split(' ').collect();

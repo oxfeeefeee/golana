@@ -23,7 +23,6 @@ wallet = "{1}"
 loader_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
 
 [test]
-test_provider = "localnet"
 script = "npx mocha -t 1000000 tests/**/*.ts"
 "#,
         name,

@@ -30,17 +30,12 @@ pub struct Provider {
 
 #[derive(Debug, Deserialize)]
 pub struct Test {
-    pub test_provider: String,
     pub script: String,
 }
 
 impl GolanaConfig {
     pub fn get_provider(&self) -> Result<&Provider> {
         self.get_provider_impl(&self.project.provider)
-    }
-
-    pub fn get_test_provider(&self) -> Result<&Provider> {
-        self.get_provider_impl(&self.test.test_provider)
     }
 
     fn get_provider_impl(&self, key: &str) -> Result<&Provider> {

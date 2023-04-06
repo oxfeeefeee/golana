@@ -16,7 +16,7 @@ describe("helloworld", async () => {
         it("Initialize program state", async () => {
             // Airdropping tokens to a payer.
             await provider.connection.confirmTransaction(
-                await provider.connection.requestAirdrop(payer.publicKey, 1000000000),
+                await provider.connection.requestAirdrop(payer.publicKey, 100000000),
                 "processed"
             );
 

@@ -6,6 +6,12 @@
 
 - Clone Golana repo: <https://github.com/oxfeeefeee/golana>
 
+- Start your local Solana validator, in your home directory (or any other dir) run:
+
+    ```bash
+    solana-test-validator
+    ```
+
 - Deploy the Golana loader
 
     1. Go to `GOLANA_REPO/loader/`

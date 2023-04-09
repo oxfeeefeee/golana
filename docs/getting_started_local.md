@@ -69,7 +69,7 @@
 
     3. Now you have a golana project in `GOLANA_REPO/examples/to_the_sun/`, compare it with `GOLANA_REPO/examples/helloworld` and start coding!
 
-## Explanaions
+## Explanations
 
 It's possible to get started with devnet/testnet, but it's always easier to test your program with a local cluster, as you have minimal latency and unlimited money. However, it takes a few extra steps to set it up.
 

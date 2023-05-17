@@ -1,4 +1,4 @@
-# Solana (concepts) simplified (for developers)
+# Solana as an OS
 
 ## Confusing Terminology
 

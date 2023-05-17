@@ -1,6 +1,6 @@
 # Getting started with local cluster
 
-## TLDR
+## Steps
 
 - Install Anchor following this: <https://www.anchor-lang.com/docs/installation>
 
@@ -37,19 +37,27 @@
 
     2. Open Golana.toml, replace the loader_id with the id you just got
 
-    3. Deploy `helloworld`, run:
+    3. Build `helloworld`, run:
+
+        ```bash
+        ../../target/debug/golana-cli build
+        ```
+
+        The generated file can be found at `GOLANA_REPO/examples/helloworld/target/`
+
+    4. Deploy `helloworld`, run:
 
         ```bash
         ../../target/debug/golana-cli deploy
         ```
 
-    4. Install Node libraries for testing, run:
+    5. Install Node libraries for testing, run:
 
         ```bash
         npm install
         ```
 
-    5. Run the test:
+    6. Run the test:
 
         ```bash
         ../../target/debug/golana-cli test
@@ -69,7 +77,7 @@
 
     3. Now you have a golana project in `GOLANA_REPO/examples/to_the_sun/`, compare it with `GOLANA_REPO/examples/helloworld` and start coding!
 
-## Explanations
+## Notes
 
 It's possible to get started with devnet/testnet, but it's always easier to test your program with a local cluster, as you have minimal latency and unlimited money. However, it takes a few extra steps to set it up.
 

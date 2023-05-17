@@ -101,6 +101,7 @@ type IxExchange struct {
 }
 
 func (ix *IxExchange) Process() {
+	// assert is a built-in function added by the Goscript compiler
 	assert(*ix.initializer.Key == ix.escrowAccount_data.initializerKey)
 	assert(*ix.initializerDepositTokenAccount.Key == ix.escrowAccount_data.initializerDepositTokenAccount)
 	assert(*ix.initializerReceiveTokenAccount.Key == ix.escrowAccount_data.initializerReceiveTokenAccount)

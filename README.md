@@ -1,8 +1,8 @@
-# Golang(Goscript) on Solana
+# Golana -- Golang(Goscript) on Solana
 
 ## Intruduction
 
-- [What is Goscirpt](<https://github.com/oxfeeefeee/golana/blob/main/docs/WHAT.md>)
+- [What is Golana](<https://github.com/oxfeeefeee/golana/blob/main/docs/WHAT.md>)
 - The project is currently in the alpha stage, and the API is not stable yet. You can try out the examples in the [examples](<https://github.com/oxfeeefeee/golana/tree/main/examples>) directory.
 
 ## About Solana

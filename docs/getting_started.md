@@ -1,4 +1,4 @@
-# Getting started with local cluster
+# Getting started
 
 ## Steps
 
@@ -79,8 +79,8 @@
 
 ## Notes
 
-It's possible to get started with devnet/testnet, but it's always easier to test your program with a local cluster, as you have minimal latency and unlimited money. However, it takes a few extra steps to set it up.
+- This is what you'd do with a local validator. It's possible to get started with devnet/testnet, but it's always easier to test your program with a local cluster, as you have minimal latency and unlimited money. However, it takes a few extra steps to set it up. If you want to try it out on the testnet, modify the provider field in the GOLANA_REPO/examples/xxx/Golana.toml file to `testnet`. The loader id "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP" is the one deployed by the author on the testnet. You can deploy it yourself if you'd like.
 
-Golana programs are just GoScript bytecode. In order to run them, we need a standard Solana program that embeds a GoScript VM to load it, which is the loader.
+- Golana programs are just GoScript bytecode. In order to run them, we need a standard Solana program that embeds a GoScript VM to load it, which is the loader. The loader itself is built with Anchor, and it does not come with the official validator node, so you have to deploy it yourself to your local node. That's why you need to install Anchor.
 
-The loader itself is built with Anchor, and it does not come with the official validator node, so you have to deploy it yourself to your local node. That's why you need to install Anchor.
+- In the test scripts of the examples the memory and CPU limit are always set to the maximum, which is because running a complex VM as a Solana program is pretty expensive, some optimizations are planned. For now you should do the same in your own tests.

@@ -14,7 +14,7 @@ With a VM (written in C/C++) that runs on Windows and supports Java bytecode, th
 
 ## Tools
 
-Golana (the Solana program) is deployed on the blockchain, so you don't need to make any preparations to access it. However, you do need to install the Golana SDK, which contains tools that can generate templates, run test cases, and deploy your Golana project.
+The loader (the Goscript VM that runs on-chain) is deployed on the blockchain, so you don't need to make any preparations to access it unless you want to run tests locally. However, you do need to install the Golana SDK, which contains tools that can generate templates, run test cases, build and deploy your Golana project.
 
 ## Goscript vs Go
 

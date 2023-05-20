@@ -17,7 +17,7 @@ Articles that may help understanding Solana:
 ## Getting started
 
 - [Programming with Golana](<https://github.com/oxfeeefeee/golana/blob/main/docs/programming_golana.md>)
-- [Getting started with local cluster](<https://github.com/oxfeeefeee/golana/blob/main/docs/getting_started_local.md>)
+- [Getting started with local cluster](<https://github.com/oxfeeefeee/golana/blob/main/docs/getting_started.md>)
 
 ## Ask questions
 

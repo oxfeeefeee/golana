@@ -37,6 +37,11 @@ type PartialAccount<A extends IdlAccountItem> = A extends IdlAccounts
   : Address;
 
 export class Program<IDL extends Idl = Idl> {
+
+  private _bytecodePK: PublicKey;
+
+  private _memDumpPK: PublicKey;
+
   /**
    * The namespace provides a builder API for all APIs on the program.
    * This is an alternative to using namespace the other namespaces..
@@ -71,10 +76,12 @@ export class Program<IDL extends Idl = Idl> {
 
   public constructor(
     private _idl: IDL,
-    private _bytecodePK: PublicKey,
+    bytecodePKAndMemDumpPK: [PublicKey, PublicKey],
     private _provider = getProvider(),
     golanaLoaderId: Address = LOADER_ID,
   ) {
+    this._bytecodePK = bytecodePKAndMemDumpPK[0];
+    this._memDumpPK = bytecodePKAndMemDumpPK[1];
     this._golanaLoader = new AnchorProgram<Loader>(LoaderIDL, translateAddress(golanaLoaderId), _provider);
 
     this.methods = Object.fromEntries(
@@ -82,15 +89,17 @@ export class Program<IDL extends Idl = Idl> {
         idlIx.name,
         MethodsBuilderFactory.build<IDL, typeof idlIx>(
           this._golanaLoader,
-          _bytecodePK,
+          this._memDumpPK,
           idlIx
         )
       ])
     ) as unknown as MethodsNamespace<IDL>;
   }
 
-  static createByteCodePubKey(name: string, provider = getProvider(), golanaLoaderId: Address = LOADER_ID) {
-    return PublicKey.createWithSeed(provider.publicKey as PublicKey, name, translateAddress(golanaLoaderId));
+  static async createCodePubKeys(name: string, provider = getProvider(), golanaLoaderId: Address = LOADER_ID): Promise<[PublicKey, PublicKey]> {
+    let pk = provider.publicKey as PublicKey;
+    let addr = translateAddress(golanaLoaderId);
+    return [await PublicKey.createWithSeed(pk, "BC" + name, addr), await PublicKey.createWithSeed(pk, "MM" + name, addr)];
   }
 
   async findAddr(seed: string) {
@@ -117,13 +126,13 @@ export class Program<IDL extends Idl = Idl> {
 export class MethodsBuilderFactory {
   public static build<IDL extends Idl, I extends AllInstructions<IDL>>(
     loader: AnchorProgram<Loader>,
-    bytecodePK: PublicKey,
+    memDumpPK: PublicKey,
     idlIx: AllInstructions<IDL>
   ): MethodsFn<IDL, I, MethodsBuilder<IDL, I>> {
     return (...args) =>
       new MethodsBuilder(
         loader,
-        bytecodePK,
+        memDumpPK,
         idlIx,
         args
       );
@@ -135,7 +144,7 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
 
   constructor(
     loader: AnchorProgram<Loader>,
-    private _bytecodePK: PublicKey,
+    private _memDumpPK: PublicKey,
     private _idlIx: IdlInstruction,
     args: ArgsTuple<I["args"], IdlTypes<IDL>>,
   ) {
@@ -192,7 +201,7 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
       }
     }
 
-    this._exec.accounts({ bytecode: this._bytecodePK }).remainingAccounts(accs);
+    this._exec.accounts({ memDump: this._memDumpPK }).remainingAccounts(accs);
     return this;
   }
 

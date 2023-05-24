@@ -1,6 +1,5 @@
 use crate::ffi::{fmt2, solana};
 use anchor_lang::prelude::*;
-use borsh::de::BorshDeserialize;
 use go_vm::types::GosValue;
 use go_vm::*;
 use golana::*;
@@ -9,14 +8,12 @@ use std::cell::RefCell;
 
 pub fn run(
     key: &Pubkey,
-    bin: &Vec<u8>,
-    meta_bin: &Vec<u8>,
+    bc: &Bytecode,
+    metas: &TxMeta,
     accounts: &[AccountInfo],
     id: &str,
     args: Vec<u8>,
 ) -> Result<()> {
-    let bc = Bytecode::try_from_slice(bin).unwrap();
-    let metas = TxMeta::try_from_slice(meta_bin).unwrap();
     let ix = Instruction::new(key, &metas, accounts, id, &args)?;
     let p = std::ptr::addr_of!(ix) as usize;
 

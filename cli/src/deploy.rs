@@ -9,12 +9,20 @@ use std::path::Path;
 // deploy the project
 pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> {
     let program = new_vm_program(config.get_provider()?)?;
-    let seed = &config.project.name;
-    let space = config.project.space;
     let rpc_client = program.rpc();
+    let name = &config.project.name;
 
-    let rent = rpc_client.get_minimum_balance_for_rent_exemption(space.try_into().unwrap())?;
-    let bytecode_pk = Pubkey::create_with_seed(&program.payer(), seed, &program.id())?;
+    let bc_seed = String::from("BC") + name;
+    let bc_space = config.project.space;
+    let bc_rent =
+        rpc_client.get_minimum_balance_for_rent_exemption(bc_space.try_into().unwrap())?;
+    let bytecode_pk = Pubkey::create_with_seed(&program.payer(), &bc_seed, &program.id())?;
+
+    let mm_seed = String::from("MM") + name;
+    let mm_space = config.project.cache_space;
+    let mm_rent =
+        rpc_client.get_minimum_balance_for_rent_exemption(mm_space.try_into().unwrap())?;
+    let mem_dump_pk = Pubkey::create_with_seed(&program.payer(), &mm_seed, &program.id())?;
 
     // check if the account exists
     let account =
@@ -25,49 +33,68 @@ pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> 
             return Err(anyhow!("Program already deployed"));
         }
 
-        gol_clear(&program, &bytecode_pk, config.project.name.clone())?;
+        gol_clear(
+            &program,
+            &bytecode_pk,
+            &mem_dump_pk,
+            config.project.name.clone(),
+        )?;
     } else {
-        // create a new account
-        let ix = solana_sdk::system_instruction::create_account_with_seed(
+        // create new accounts
+        let bc_ix = solana_sdk::system_instruction::create_account_with_seed(
             &program.payer(),
             &bytecode_pk,
             &program.payer(),
-            seed,
-            rent,
-            space,
+            &bc_seed,
+            bc_rent,
+            bc_space,
             &program.id(),
         );
-        program.request().instruction(ix).send()?;
+        let mm_ix = solana_sdk::system_instruction::create_account_with_seed(
+            &program.payer(),
+            &mem_dump_pk,
+            &program.payer(),
+            &mm_seed,
+            mm_rent,
+            mm_space,
+            &program.id(),
+        );
 
-        gol_initialize(&program, &bytecode_pk, config.project.name.clone())?;
+        program
+            .request()
+            .instruction(
+                solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(
+                    256 * 1024,
+                ),
+            )
+            .instruction(bc_ix)
+            .instruction(mm_ix)
+            .accounts(golana_loader::accounts::GolInitialize {
+                authority: program.payer(),
+                bytecode: bytecode_pk.to_owned(),
+                mem_dump: mem_dump_pk.to_owned(),
+            })
+            .args(golana_loader::instruction::GolInitialize {
+                handle: name.clone(),
+            })
+            .send()?;
     }
 
     let bytecode = std::fs::read(bc_path)?;
     gol_write(&program, &bytecode_pk, &bytecode)?;
 
-    gol_finalize(&program, &bytecode_pk)?;
+    gol_finalize(&program, &bytecode_pk, &mem_dump_pk)?;
 
-    Ok(())
-}
-
-/// Call Initialize instruction of Golana program
-fn gol_initialize(program: &Program, bytecode_pk: &Pubkey, name: String) -> Result<()> {
-    program
-        .request()
-        .instruction(
-            solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(256 * 1024),
-        )
-        .accounts(golana_loader::accounts::GolInitialize {
-            authority: program.payer(),
-            bytecode: bytecode_pk.to_owned(),
-        })
-        .args(golana_loader::instruction::GolInitialize { handle: name })
-        .send()?;
     Ok(())
 }
 
 /// Call Clear instruction of Golana program
-fn gol_clear(program: &Program, bytecode_pk: &Pubkey, name: String) -> Result<()> {
+fn gol_clear(
+    program: &Program,
+    bytecode_pk: &Pubkey,
+    mem_dump_pk: &Pubkey,
+    name: String,
+) -> Result<()> {
     program
         .request()
         .instruction(
@@ -76,6 +103,7 @@ fn gol_clear(program: &Program, bytecode_pk: &Pubkey, name: String) -> Result<()
         .accounts(golana_loader::accounts::GolClear {
             authority: program.payer(),
             bytecode: bytecode_pk.to_owned(),
+            mem_dump: mem_dump_pk.to_owned(),
         })
         .args(golana_loader::instruction::GolClear { handle: name })
         .send()?;
@@ -116,7 +144,7 @@ fn gol_write(program: &Program, bytecode_pk: &Pubkey, bytecode: &[u8]) -> Result
 }
 
 /// Call Finalize instruction of Golana program
-fn gol_finalize(program: &Program, bytecode_pk: &Pubkey) -> Result<()> {
+fn gol_finalize(program: &Program, bytecode_pk: &Pubkey, mem_dump_pk: &Pubkey) -> Result<()> {
     program
         .request()
         .instruction(
@@ -128,6 +156,7 @@ fn gol_finalize(program: &Program, bytecode_pk: &Pubkey) -> Result<()> {
         .accounts(golana_loader::accounts::GolFinalize {
             authority: program.payer(),
             bytecode: bytecode_pk.to_owned(),
+            mem_dump: mem_dump_pk.to_owned(),
         })
         .args(golana_loader::instruction::GolFinalize {})
         .send()?;

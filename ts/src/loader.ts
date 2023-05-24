@@ -14,6 +14,11 @@ export type Loader = {
           "name": "bytecode",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "memDump",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": [
@@ -33,6 +38,11 @@ export type Loader = {
         },
         {
           "name": "bytecode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "memDump",
           "isMut": true,
           "isSigner": false
         }
@@ -77,6 +87,11 @@ export type Loader = {
           "name": "bytecode",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "memDump",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": []
@@ -85,7 +100,7 @@ export type Loader = {
       "name": "golExecute",
       "accounts": [
         {
-          "name": "bytecode",
+          "name": "memDump",
           "isMut": false,
           "isSigner": false
         }
@@ -121,12 +136,37 @@ export type Loader = {
             "type": "bool"
           },
           {
-            "name": "meta",
-            "type": "bytes"
-          },
-          {
             "name": "content",
             "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "golMemoryDump",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bytecode",
+            "type": "publicKey"
+          },
+          {
+            "name": "metaPtr",
+            "type": "u64"
+          },
+          {
+            "name": "bcPtr",
+            "type": "u64"
+          },
+          {
+            "name": "dump",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
           }
         ]
       }
@@ -150,6 +190,11 @@ export const IDL: Loader = {
           "name": "bytecode",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "memDump",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": [
@@ -169,6 +214,11 @@ export const IDL: Loader = {
         },
         {
           "name": "bytecode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "memDump",
           "isMut": true,
           "isSigner": false
         }
@@ -213,6 +263,11 @@ export const IDL: Loader = {
           "name": "bytecode",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "memDump",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": []
@@ -221,7 +276,7 @@ export const IDL: Loader = {
       "name": "golExecute",
       "accounts": [
         {
-          "name": "bytecode",
+          "name": "memDump",
           "isMut": false,
           "isSigner": false
         }
@@ -257,12 +312,37 @@ export const IDL: Loader = {
             "type": "bool"
           },
           {
-            "name": "meta",
-            "type": "bytes"
-          },
-          {
             "name": "content",
             "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "golMemoryDump",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bytecode",
+            "type": "publicKey"
+          },
+          {
+            "name": "metaPtr",
+            "type": "u64"
+          },
+          {
+            "name": "bcPtr",
+            "type": "u64"
+          },
+          {
+            "name": "dump",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
           }
         ]
       }

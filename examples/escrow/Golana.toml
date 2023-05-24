@@ -1,6 +1,7 @@
 [project]
 name = "escrow"
 space = 30000
+cache_space = 300000
 out_dir = "./target"
 provider = "localnet"
 

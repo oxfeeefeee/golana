@@ -17,6 +17,7 @@ pub struct GolanaConfig {
 pub struct Project {
     pub name: String,
     pub space: u64,
+    pub cache_space: u64,
     pub out_dir: PathBuf,
     pub provider: String,
 }

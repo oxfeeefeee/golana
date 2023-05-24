@@ -12,7 +12,7 @@ describe("escrow", async () => {
   try {
     let provider = initFromEnv();
 
-    const escrow = new Program<Escrow>(IDL, await Program.createByteCodePubKey("escrow"));
+    const escrow = new Program<Escrow>(IDL, await Program.createCodePubKeys("escrow"));
 
     const takerAmount = 1001;
     const initializerAmount = 502;

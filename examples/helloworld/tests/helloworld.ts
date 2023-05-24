@@ -7,7 +7,7 @@ describe("helloworld", async () => {
     try {
         let provider = initFromEnv();
 
-        const hello = new Program<Helloworld>(IDL, await Program.createByteCodePubKey("helloworld"));
+        const hello = new Program<Helloworld>(IDL, await Program.createCodePubKeys("helloworld"));
 
         const userAccountSpace = 512;
         const userAccount = Keypair.generate();

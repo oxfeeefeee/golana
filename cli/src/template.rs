@@ -9,6 +9,7 @@ pub fn golana_toml(name: &str) -> String {
         r#"[project]
 name = "{0}"
 space = 30000
+cache_space = 300000
 out_dir = "./target"
 provider = "localnet"
 
@@ -199,7 +200,7 @@ pub fn npm_package() -> String {
         "@solana/spl-token": "^0.3.5",
         "@solana/web3.js": "^1.74.0",
         "bn.js": "^5.2.1",
-        "golana": "^0.1.0"
+        "golana": "^0.2.0"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.1",

@@ -42,7 +42,7 @@ describe("{1}", async () => {{
     try {{
         let provider = initFromEnv();
 
-        const hello = new Program<{0}>(IDL, await Program.createByteCodePubKey("{1}"));
+        const hello = new Program<{0}>(IDL, await Program.createCodePubKeys("{1}"));
 
 
         // ...

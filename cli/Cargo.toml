@@ -27,7 +27,7 @@ heck = "0.3.1"
 [dependencies.go-engine] 
 default-features = false
 features = ["read_fs", "read_zip", "codegen", "btree_map"]
-version = "0.1.0"
+version = "0.1.1"
 #path = "../../goscript/engine"
 
 

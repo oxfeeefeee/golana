@@ -73,6 +73,10 @@ func AbortOnError(e error) {
 	}
 }
 
+func LogComputeUnit() {
+	solFfi.log_compute_unit()
+}
+
 func FindProgramAddress(seed string, pk *PublicKey) (*PublicKey, uint8) {
 	return solFfi.find_program_address(seed, pk)
 }

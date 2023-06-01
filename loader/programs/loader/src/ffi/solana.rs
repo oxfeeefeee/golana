@@ -53,6 +53,10 @@ impl SolanaFfi {
         Ok(rust_err.0.to_string())
     }
 
+    fn ffi_log_compute_unit() {
+        solana_program::log::sol_log_compute_units();
+    }
+
     fn ffi_find_program_address(ctx: &FfiCtx, seed: GosValue, program: GosValue) -> (GosValue, u8) {
         let program_id =
             Self::get_pub_key(ctx, &program).expect("ffi_find_program_address: bad program id");

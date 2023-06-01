@@ -26,6 +26,8 @@ type ffiSolana interface {
 
 	error_string(ptr unsafe.Pointer) string
 
+	log_compute_unit()
+
 	find_program_address(seed string, program *PublicKey) (*PublicKey, uint8)
 
 	create_account(from, to uint, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) unsafe.Pointer

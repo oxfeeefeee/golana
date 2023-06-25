@@ -7,7 +7,7 @@ describe("swap", async () => {
     try {
         let provider = initFromEnv();
 
-        const hello = new Program<Swap>(IDL, await Program.createCodePubKeys("swap"));
+        const swap = new Program<Swap>(IDL, await Program.createCodePubKeys("swap"));
 
 
         // ...

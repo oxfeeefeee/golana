@@ -1,34 +1,83 @@
 package instructions
 
 import (
-	"fmt2"
-	_ "solana"
+	. "solana"
 )
 
-// This is the definition of the IxInit Instruction
-type IxInit struct {
-	// First, list all the accounts that are used by the instruction
-	// Use tags to specify the account attributes:
-	// - `golana:"signer"` for the accounts that are used as signer
-	// - `golana:"mut"` for the accounts that are used as writable
-	// ...
+const AUTH_PDA_SEED = "auth"
+const TOKEN_A_VAULT_SEED = "token-a"
+const TOKEN_B_VAULT_SEED = "token-b"
 
-	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
-	// Use the corresponding account name with a _data suffix,
-	// and add the `golana:"init"` or `golana:"mut"` tag to the field:
-	// - `golana:"init"` for the data that will be initialized by the instruction
-	// - `golana:"mut"` for the data that will be written by the instruction
-	// ...
-
-	// Finally, list all the instruction parameters
-	// ...
+type poolData struct {
+	creator     PublicKey
+	tokenAVault PublicKey
+	tokenBVault PublicKey
+	feeRate     uint64
 }
 
-// This is the business logic of the IxInit
-func (ix *IxInit) Process() {
-	// ...
+type IxCreatePool struct {
+	// The creator of the pool, i.e. the one who called IxCreatePool
+	creator *AccountInfo `golana:"mut, signer"`
+	// The mint of token A/B
+	mintA *AccountInfo
+	mintB *AccountInfo
+	// The vault holding token A/B, i.e. the SPL token account
+	tokenAVault *AccountInfo
+	tokenBVault *AccountInfo
+	// The pool account storing the pool data
+	poolInfo      *AccountInfo `golana:"mut"`
+	systemProgram *AccountInfo
+	tokenProgram  *AccountInfo
+	rent          *AccountInfo
+
+	poolInfo_data *poolData `golana:"init"`
+
+	// The fee rate, in basis points, i.e. 1000 = 10%
+	feeRate         uint64
+	tokenAVaultBump uint8
+	tokenBVaultBump uint8
 }
 
-func SomeFunc() {
-	fmt2.Println("someFunc from somelib")
+func (ix *IxCreatePool) Process() {
+	vaultASeedBump := []SeedBump{{TOKEN_A_VAULT_SEED, ix.tokenAVaultBump}}
+	vaultBSeedBump := []SeedBump{{TOKEN_B_VAULT_SEED, ix.tokenBVaultBump}}
+	vaultAuthority, _ := FindProgramAddress(AUTH_PDA_SEED, GetId())
+
+	// Create the vaults
+	AbortOnError(TokenCreateAndInitAccount(
+		ix.creator,
+		ix.tokenAVault,
+		ix.tokenProgram.Key,
+		ix.mintA,
+		ix.creator,
+		ix.rent,
+		vaultASeedBump))
+	AbortOnError(TokenSetAuthority(
+		ix.tokenAVault,
+		ix.creator,
+		vaultAuthority,
+		AuthAccountOwner, nil))
+	AbortOnError(TokenCreateAndInitAccount(
+		ix.creator,
+		ix.tokenBVault,
+		ix.tokenProgram.Key,
+		ix.mintB,
+		ix.creator,
+		ix.rent,
+		vaultBSeedBump))
+	AbortOnError(TokenSetAuthority(
+		ix.tokenBVault,
+		ix.creator,
+		vaultAuthority,
+		AuthAccountOwner, nil))
+
+	// Initialize the pool account
+	data := new(poolData)
+	data.creator = *ix.creator.Key
+	data.tokenAVault = *ix.tokenAVault.Key
+	data.tokenBVault = *ix.tokenBVault.Key
+	data.feeRate = ix.feeRate
+	ix.poolInfo_data = data
+	// Commit the data to the account
+	CommitData(ix.poolInfo)
 }

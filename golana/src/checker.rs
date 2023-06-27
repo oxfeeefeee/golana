@@ -183,19 +183,20 @@ pub struct TxMeta {
 
 pub fn check(bc: &Bytecode) -> Result<TxMeta> {
     let account_info_meta = get_account_info_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
-    let main_pkg = &bc.objects.packages[bc.main_pkg];
-    let ix_details: Vec<(&String, types::Meta)> = main_pkg
-        .member_indices()
-        .iter()
-        .filter_map(|(name, index)| {
-            (name.starts_with("Ix") && main_pkg.member(*index).typ() == types::ValueType::Metadata)
-                .then(|| {
-                    let member = main_pkg.member(*index);
-                    let gmeta = member.as_metadata();
-                    (name, gmeta.clone())
-                })
-        })
-        .collect();
+
+    let mut ix_details = Vec::new();
+    for pkg in bc.objects.packages.iter() {
+        if pkg.name() == "solana" {
+            continue;
+        }
+        for (name, index) in pkg.member_indices() {
+            if name.starts_with("Ix") && pkg.member(*index).typ() == types::ValueType::Metadata {
+                let member = pkg.member(*index);
+                let gmeta = member.as_metadata();
+                ix_details.push((name, gmeta.clone()));
+            }
+        }
+    }
 
     let instructions = ix_details
         .into_iter()

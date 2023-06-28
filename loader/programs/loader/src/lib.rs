@@ -75,6 +75,7 @@ pub mod loader {
     }
 
     pub fn gol_execute(ctx: Context<GolExecute>, id: String, args: Vec<u8>) -> Result<()> {
+        msg!(&id);
         let mem_dump = &mut ctx.accounts.mem_dump.load()?;
         // Load the content of the memory stored by gol_finalize.
         // Now bytecode is ready to use without deserialization!

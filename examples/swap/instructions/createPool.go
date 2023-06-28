@@ -22,8 +22,8 @@ type IxCreatePool struct {
 	mintA *AccountInfo
 	mintB *AccountInfo
 	// The vault holding token A/B, i.e. the SPL token account
-	tokenAVault *AccountInfo
-	tokenBVault *AccountInfo
+	tokenAVault *AccountInfo `golana:"mut"`
+	tokenBVault *AccountInfo `golana:"mut"`
 	// The pool account storing the pool data
 	poolInfo      *AccountInfo `golana:"mut"`
 	systemProgram *AccountInfo

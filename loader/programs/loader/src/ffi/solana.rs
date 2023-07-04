@@ -4,6 +4,10 @@ use go_vm::types::*;
 use go_vm::*;
 use golana::*;
 use solana_program::{self, account_info::AccountInfo, program_pack::Pack, pubkey::Pubkey};
+use spl_associated_token_account::{
+    self, instruction::create_associated_token_account,
+    instruction::create_associated_token_account_idempotent,
+};
 use spl_token::{self, instruction::AuthorityType};
 use std::rc::Rc;
 
@@ -253,6 +257,49 @@ impl SolanaFfi {
                 &ix,
                 &[from.clone(), to.clone(), auth.clone()],
                 signer_seeds,
+                inst.gos_program_id,
+            )
+        })();
+        Self::make_err_unsafe_ptr(result)
+    }
+
+    fn ffi_token_create_associated_account(
+        ctx: &FfiCtx,
+        payer_index: usize,
+        dest_index: usize,
+        owner_index: usize,
+        mint_index: usize,
+        sys_index: usize,
+        spl_index: usize,
+        idempotent: bool,
+    ) -> GosValue {
+        let result: anyhow::Result<()> = (move || {
+            let inst = Self::get_instruction(ctx);
+            let mint = &inst.accounts[mint_index];
+            let owner = &inst.accounts[owner_index];
+            let payer = &inst.accounts[payer_index];
+            let dest = &inst.accounts[dest_index];
+            let ix = if idempotent {
+                create_associated_token_account_idempotent(
+                    owner.key,
+                    payer.key,
+                    mint.key,
+                    &spl_token::ID,
+                )
+            } else {
+                create_associated_token_account(owner.key, payer.key, mint.key, &spl_token::ID)
+            };
+            Self::invoke_signed(
+                &ix,
+                &[
+                    payer.clone(),
+                    dest.clone(),
+                    owner.clone(),
+                    mint.clone(),
+                    inst.accounts[sys_index].clone(),
+                    inst.accounts[spl_index].clone(),
+                ],
+                FfiCtx::new_nil(ValueType::Void),
                 inst.gos_program_id,
             )
         })();

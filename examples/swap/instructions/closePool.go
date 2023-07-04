@@ -16,8 +16,6 @@ type IxClosePool struct {
 	systemProgram *AccountInfo
 	tokenProgram  *AccountInfo
 
-	poolInfo_data *poolData `golana:"init"`
-
 	authBump uint8
 }
 

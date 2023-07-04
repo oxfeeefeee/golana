@@ -24,3 +24,8 @@ func TokenTransfer(from, to, auth *AccountInfo, amount uint64, signerSeeds []See
 	p := solFfi.token_transfer(from.index, to.index, auth.index, amount, signerSeeds)
 	return NewSolanaError(p)
 }
+
+func TokenCreateAssociatedAccount(from, to, owner, mint, sys, spl *AccountInfo, idempotent bool) error {
+	p := solFfi.token_create_associated_account(from.index, to.index, owner.index, mint.index, sys.index, spl.index, idempotent)
+	return NewSolanaError(p)
+}

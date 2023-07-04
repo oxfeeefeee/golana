@@ -41,4 +41,6 @@ type ffiSolana interface {
 	token_set_authority(accountOrMint, currentAuth uint, newAuth *PublicKey, authType AuthorityType, signerSeeds []SeedBump) unsafe.Pointer
 
 	token_transfer(from, to, auth uint, amount uint64, signerSeeds []SeedBump) unsafe.Pointer
+
+	token_create_associated_account(from, to, owner, mint, sys, spl uint, idempotent bool) unsafe.Pointer
 }

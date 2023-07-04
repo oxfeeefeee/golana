@@ -1,7 +1,7 @@
 import { IDL, Swap } from '../target/swap_idl.js';
 import { Program, initFromEnv } from "golana";
 import { ComputeBudgetProgram, Keypair, SystemProgram, Transaction, PublicKey, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";
 
@@ -14,11 +14,19 @@ describe("swap", async () => {
         const infoAccountSpace = 512;
 
         const infoAccount = Keypair.generate();
-        const creator = Keypair.generate();
         const mintAuthority = Keypair.generate();
+
+        const creator = Keypair.generate();
+        const depositor = Keypair.generate();
+        const swapper = Keypair.generate();
+
+        let depositorTokenAccountA: Account;
+        let depositorTokenAccountB: Account;
+        let depositorTokenAccountLP: Account;
 
         let mintA: PublicKey;
         let mintB: PublicKey;
+        let mintLP: PublicKey;
 
         let vault_account_a_pda: PublicKey;
         let vault_account_a_bump: number;
@@ -28,14 +36,23 @@ describe("swap", async () => {
         let vault_authority_bump: number;
 
 
+
         it("Initialize program state", async () => {
             ([vault_account_a_pda, vault_account_a_bump] = await swap.findAddr("token-a"));
             ([vault_account_b_pda, vault_account_b_bump] = await swap.findAddr("token-b"));
             ([vault_authority_pda, vault_authority_bump] = await swap.findAddr("auth"));
 
-            // Airdropping tokens to a creator.
+            // Airdropping tokens
             await provider.connection.confirmTransaction(
                 await provider.connection.requestAirdrop(creator.publicKey, 1000000000),
+                "processed"
+            );
+            await provider.connection.confirmTransaction(
+                await provider.connection.requestAirdrop(depositor.publicKey, 1000000000),
+                "processed"
+            );
+            await provider.connection.confirmTransaction(
+                await provider.connection.requestAirdrop(swapper.publicKey, 1000000000),
                 "processed"
             );
 
@@ -86,33 +103,33 @@ describe("swap", async () => {
                 15
             );
 
-            // initializerTokenAccountA = await createAccount(
-            //     provider.connection,
-            //     creator,
-            //     mintA,
-            //     initializerMainAccount.publicKey
-            // );
+            mintLP = await createMint(
+                provider.connection,
+                creator,
+                mintAuthority.publicKey,
+                null,
+                15
+            );
 
-            // initializerTokenAccountB = await createAccount(
-            //     provider.connection,
-            //     creator,
-            //     mintB,
-            //     initializerMainAccount.publicKey
-            // );
+            depositorTokenAccountA = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                depositor,
+                mintA,
+                depositor.publicKey,
+            );
+            depositorTokenAccountB = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                depositor,
+                mintB,
+                depositor.publicKey,
+            );
+            depositorTokenAccountLP = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                depositor,
+                mintLP,
+                depositor.publicKey,
+            );
 
-            // takerTokenAccountA = await createAccount(
-            //     provider.connection,
-            //     creator,
-            //     mintA,
-            //     takerMainAccount.publicKey
-            // );
-
-            // takerTokenAccountB = await createAccount(
-            //     provider.connection,
-            //     creator,
-            //     mintB,
-            //     takerMainAccount.publicKey
-            // );
 
             // await mintTo(
             //     provider.connection,
@@ -174,6 +191,33 @@ describe("swap", async () => {
             assert.ok(_vaultB.owner.equals(vault_authority_pda));
         });
 
+
+
+        it("IxDeposit", async () => {
+            await swap.methods
+                .IxDeposit(new BN(100), new BN(10), vault_authority_bump)
+                .accounts({
+                    depositor: depositor.publicKey,
+                    mintLiquidity: mintLP,
+                    tokenA: depositorTokenAccountA.address,
+                    tokenB: depositorTokenAccountB.address,
+                    tokenLiquidity: depositorTokenAccountLP.address,
+                    tokenAVault: vault_account_a_pda,
+                    tokenBVault: vault_account_b_pda,
+                    vaultAuthority: vault_authority_pda,
+                    poolInfo: infoAccount.publicKey,
+                    systemProgram: SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    rent: SYSVAR_RENT_PUBKEY,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                ])
+                .signers([depositor])
+                .rpc({ skipPreflight: true });
+        });
+
         it("IxClosePool", async () => {
             await swap.methods
                 .IxClosePool(vault_authority_bump)
@@ -192,9 +236,7 @@ describe("swap", async () => {
                 ])
                 .signers([creator])
                 .rpc({ skipPreflight: true });
-
         });
-
 
     } catch (e) {
         console.error(e);

@@ -23,9 +23,10 @@ type IxDeposit struct {
 	// The pool account storing the pool data
 	poolInfo *AccountInfo `golana:"mut"`
 
-	systemProgram *AccountInfo
-	tokenProgram  *AccountInfo
-	rent          *AccountInfo
+	systemProgram          *AccountInfo
+	tokenProgram           *AccountInfo
+	associatedTokenProgram *AccountInfo
+	rent                   *AccountInfo
 
 	// The amount of token A/B to deposit
 	amountA  uint64
@@ -41,7 +42,7 @@ func (ix *IxDeposit) Process() {
 		ix.depositor,
 		ix.mintLiquidity,
 		ix.systemProgram,
-		ix.tokenProgram,
+		ix.associatedTokenProgram,
 		true,
 	))
 }

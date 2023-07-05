@@ -1,7 +1,7 @@
 import { IDL, Swap } from '../target/swap_idl.js';
 import { Program, initFromEnv } from "golana";
 import { ComputeBudgetProgram, Keypair, SystemProgram, Transaction, PublicKey, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";
 
@@ -208,6 +208,7 @@ describe("swap", async () => {
                     poolInfo: infoAccount.publicKey,
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     rent: SYSVAR_RENT_PUBKEY,
                 })
                 .preInstructions([

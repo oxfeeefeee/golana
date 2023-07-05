@@ -1,4 +1,4 @@
-use crate::ffi::{fmt2, solana};
+use crate::ffi::{fmt2, solana, token};
 use anchor_lang::prelude::*;
 use go_vm::types::GosValue;
 use go_vm::*;
@@ -20,6 +20,7 @@ pub fn run(
     let mut ffi = go_vm::FfiFactory::with_user_data(p);
     fmt2::Fmt2Ffi::register(&mut ffi);
     solana::SolanaFfi::register(&mut ffi);
+    token::TokenFfi::register(&mut ffi);
     go_vm::run(&bc, &ffi, None);
 
     Ok(())

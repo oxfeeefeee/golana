@@ -4,6 +4,7 @@ package main
 
 import (
 	. "solana"
+	"token"
 )
 
 const ESCROW_PDA_SEED = "escrow"
@@ -63,7 +64,7 @@ func (ix *IxInit) Process() {
 	// The following code is pretty much the same as the original anchor version
 	vault_seeds := []SeedBump{{VAULT_PDA_SEED, ix.vaultAccountBump}}
 	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())
-	AbortOnError(TokenCreateAndInitAccount(
+	AbortOnError(token.CreateAndInitAccount(
 		ix.initializer,
 		ix.vaultAccount,
 		ix.tokenProgram.Key,
@@ -71,12 +72,12 @@ func (ix *IxInit) Process() {
 		ix.initializer,
 		ix.rent,
 		vault_seeds))
-	AbortOnError(TokenSetAuthority(
+	AbortOnError(token.SetAuthority(
 		ix.vaultAccount,
 		ix.initializer,
 		vaultAuthority,
 		AuthAccountOwner, nil))
-	AbortOnError(TokenTransfer(
+	AbortOnError(token.Transfer(
 		ix.initializerDepositTokenAccount,
 		ix.vaultAccount,
 		ix.initializer,
@@ -107,18 +108,18 @@ func (ix *IxExchange) Process() {
 	assert(*ix.initializerReceiveTokenAccount.Key == ix.escrowAccount_data.initializerReceiveTokenAccount)
 
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
-	AbortOnError(TokenTransfer(
+	AbortOnError(token.Transfer(
 		ix.takerDepositTokenAccount,
 		ix.initializerReceiveTokenAccount,
 		ix.taker,
 		ix.escrowAccount_data.takerAmount, nil))
-	AbortOnError(TokenTransfer(
+	AbortOnError(token.Transfer(
 		ix.vaultAccount,
 		ix.takerReceiveTokenAccount,
 		ix.vaultAuthority,
 		ix.escrowAccount_data.initializerAmount,
 		authority_seeds))
-	AbortOnError(TokenCloseAccount(
+	AbortOnError(token.CloseAccount(
 		ix.vaultAccount,
 		ix.initializer,
 		ix.vaultAuthority,
@@ -146,13 +147,13 @@ func (ix *IxCancel) Process() {
 	//_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 
-	AbortOnError(TokenTransfer(
+	AbortOnError(token.Transfer(
 		ix.vaultAccount,
 		ix.initializerDepositTokenAccount,
 		ix.vaultAuthority,
 		ix.escrowAccount_data.initializerAmount,
 		authority_seeds))
-	AbortOnError(TokenCloseAccount(
+	AbortOnError(token.CloseAccount(
 		ix.vaultAccount,
 		ix.initializer,
 		ix.vaultAuthority,

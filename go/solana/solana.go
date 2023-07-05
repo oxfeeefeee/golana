@@ -36,7 +36,7 @@ type AccountInfo struct {
 	// The epoch at which this account will next owe rent
 	RentEpoch uint64
 	// For internal use, do not access
-	index uint
+	Index uint
 }
 
 type Ix interface {
@@ -52,15 +52,15 @@ func GetId() *PublicKey {
 }
 
 func CommitLamports(account *AccountInfo) {
-	solFfi.commit_lamports(account.index)
+	solFfi.commit_lamports(account.Index)
 }
 
 func CommitData(account *AccountInfo) {
-	solFfi.commit_data(account.index)
+	solFfi.commit_data(account.Index)
 }
 
 func CommitLamportsAndData(account *AccountInfo) {
-	solFfi.commit_lamports_and_data(account.index)
+	solFfi.commit_lamports_and_data(account.Index)
 }
 
 func CommitEverything() {
@@ -82,7 +82,7 @@ func FindProgramAddress(seed string, pk *PublicKey) (*PublicKey, uint8) {
 }
 
 func CreateAccount(from, to *AccountInfo, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) error {
-	p := solFfi.create_account(from.index, to.index, owner, lamports, space, signerSeeds)
+	p := solFfi.create_account(from.Index, to.Index, owner, lamports, space, signerSeeds)
 	return NewSolanaError(p)
 }
 

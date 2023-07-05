@@ -2,6 +2,7 @@ package instructions
 
 import (
 	. "solana"
+	"token"
 )
 
 const AUTH_PDA_SEED = "auth"
@@ -44,7 +45,7 @@ func (ix *IxCreatePool) Process() {
 	vaultAuthority, _ := FindProgramAddress(AUTH_PDA_SEED, GetId())
 
 	// Create the vaults
-	AbortOnError(TokenCreateAndInitAccount(
+	AbortOnError(token.CreateAndInitAccount(
 		ix.creator,
 		ix.tokenAVault,
 		ix.tokenProgram.Key,
@@ -52,12 +53,12 @@ func (ix *IxCreatePool) Process() {
 		ix.creator,
 		ix.rent,
 		vaultASeedBump))
-	AbortOnError(TokenSetAuthority(
+	AbortOnError(token.SetAuthority(
 		ix.tokenAVault,
 		ix.creator,
 		vaultAuthority,
 		AuthAccountOwner, nil))
-	AbortOnError(TokenCreateAndInitAccount(
+	AbortOnError(token.CreateAndInitAccount(
 		ix.creator,
 		ix.tokenBVault,
 		ix.tokenProgram.Key,
@@ -65,7 +66,7 @@ func (ix *IxCreatePool) Process() {
 		ix.creator,
 		ix.rent,
 		vaultBSeedBump))
-	AbortOnError(TokenSetAuthority(
+	AbortOnError(token.SetAuthority(
 		ix.tokenBVault,
 		ix.creator,
 		vaultAuthority,

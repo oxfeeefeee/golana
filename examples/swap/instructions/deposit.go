@@ -2,6 +2,7 @@ package instructions
 
 import (
 	. "solana"
+	"token"
 )
 
 type IxDeposit struct {
@@ -34,7 +35,7 @@ type IxDeposit struct {
 
 func (ix *IxDeposit) Process() {
 	// Create the liquidity token account as associated account if not exists
-	AbortOnError(TokenCreateAssociatedAccount(
+	AbortOnError(token.CreateAssociatedAccount(
 		ix.depositor,
 		ix.tokenLiquidity,
 		ix.depositor,

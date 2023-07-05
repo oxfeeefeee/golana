@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 pub enum GolError {
     #[msg("Handle doesn't match against the public key")]
     WrongHandle,
+    #[msg("Handle is too long")]
+    HandleTooLong,
     #[msg("No instruction found, which should be a struct in main package named Ix... ")]
     IxNotFound,
     #[msg("AccountInfo meta is not found, 'solana' package not imported?")]

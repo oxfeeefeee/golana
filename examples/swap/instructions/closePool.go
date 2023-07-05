@@ -2,6 +2,7 @@ package instructions
 
 import (
 	. "solana"
+	"token"
 )
 
 type IxClosePool struct {
@@ -22,12 +23,12 @@ type IxClosePool struct {
 func (ix *IxClosePool) Process() {
 	authSeedBump := []SeedBump{{AUTH_PDA_SEED, ix.authBump}}
 
-	AbortOnError(TokenCloseAccount(
+	AbortOnError(token.CloseAccount(
 		ix.tokenAVault,
 		ix.creator,
 		ix.vaultAuthority,
 		authSeedBump))
-	AbortOnError(TokenCloseAccount(
+	AbortOnError(token.CloseAccount(
 		ix.tokenBVault,
 		ix.creator,
 		ix.vaultAuthority,

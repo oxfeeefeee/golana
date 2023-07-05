@@ -14,6 +14,8 @@ mod malloc;
 #[global_allocator]
 static ALLOC: DualMalloc = DualMalloc::new();
 
+const MAX_HANDLE_LEN: usize = 30;
+
 #[program]
 pub mod loader {
     use super::*;
@@ -49,19 +51,29 @@ pub mod loader {
     pub fn gol_write(ctx: Context<GolWrite>, data: Vec<u8>) -> Result<()> {
         DualMalloc::set_use_smalloc(true);
 
-        ctx.accounts.bytecode.content.extend(data.iter());
+        let bc = &mut ctx.accounts.bytecode.load_mut()?;
+        let dest = &mut bc.content as *mut [u8] as *mut u8;
+        let dest = unsafe { dest.offset(bc.content_size as isize) };
+        unsafe {
+            std::ptr::copy_nonoverlapping(data.as_ptr(), dest, data.len());
+        }
+        bc.content_size += data.len();
+
         Ok(())
     }
 
     pub fn gol_finalize(ctx: Context<GolFinalize>) -> Result<()> {
         DualMalloc::set_use_smalloc(true);
-        let bc = Bytecode::try_from_slice(&ctx.accounts.bytecode.content).unwrap();
+        let bc_raw = &mut ctx.accounts.bytecode.load_mut()?;
+        let addr = &bc_raw.content as *const [u8] as *const u8;
+        let content = unsafe { std::slice::from_raw_parts(addr, bc_raw.content_size) };
+        let bc = Bytecode::try_from_slice(content).unwrap();
         let meta = golana::check(&bc)?;
         let bc_ptr = Rc::into_raw(Rc::new(bc)) as u64;
         let meta_ptr = Rc::into_raw(Rc::new(meta)) as u64;
         DualMalloc::set_use_smalloc(false);
 
-        ctx.accounts.bytecode.finalized = true;
+        bc_raw.finalized = true;
 
         // Now save the content of the memory used by smalloc.
         let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
@@ -107,7 +119,7 @@ pub mod loader {
 
 fn initialize_impl(
     auth: &Signer,
-    bytecode: &mut Account<GolBytecode>,
+    bytecode: &mut AccountLoader<GolBytecode>,
     mem_dump_key: &Pubkey,
     mem_dump: &mut GolMemoryDump,
     handle: String,
@@ -120,10 +132,12 @@ fn initialize_impl(
     let mm_pk = Pubkey::create_with_seed(auth.key, &seed, &ID).unwrap();
     require!(mem_dump_key == &mm_pk, GolError::WrongHandle);
 
-    bytecode.handle = handle;
-    bytecode.authority = auth.key();
-    bytecode.finalized = false;
-    bytecode.content = vec![];
+    let bc_loaded = &mut bytecode.load_mut()?;
+    bc_loaded.handle = string_to_array(&handle)?;
+    bc_loaded.authority = auth.key();
+    bc_loaded.finalized = false;
+    bc_loaded.content_size = 0;
+    bc_loaded.content = [0];
 
     mem_dump.bytecode = bc_pk;
     mem_dump.meta_ptr = 0;
@@ -132,12 +146,21 @@ fn initialize_impl(
     Ok(())
 }
 
+/// Convert a string into a fixed size array of bytes. If the string is shorter than the array,
+/// the remaining bytes are set to 0.
+fn string_to_array(s: &str) -> Result<[u8; MAX_HANDLE_LEN]> {
+    require!(s.len() <= MAX_HANDLE_LEN, GolError::HandleTooLong);
+    let mut arr = [0u8; MAX_HANDLE_LEN];
+    arr[..s.len()].copy_from_slice(s.as_bytes());
+    Ok(arr)
+}
+
 #[derive(Accounts)]
 #[instruction(handle: String)]
 pub struct GolInitialize<'info> {
     pub authority: Signer<'info>,
     #[account(zero)]
-    pub bytecode: Account<'info, GolBytecode>,
+    pub bytecode: AccountLoader<'info, GolBytecode>,
     #[account(zero)]
     pub mem_dump: AccountLoader<'info, GolMemoryDump>,
 }
@@ -147,7 +170,7 @@ pub struct GolInitialize<'info> {
 pub struct GolClear<'info> {
     pub authority: Signer<'info>,
     #[account(mut)]
-    pub bytecode: Account<'info, GolBytecode>,
+    pub bytecode: AccountLoader<'info, GolBytecode>,
     #[account(mut)]
     pub mem_dump: AccountLoader<'info, GolMemoryDump>,
 }
@@ -157,14 +180,14 @@ pub struct GolClear<'info> {
 pub struct GolWrite<'info> {
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority)]
-    pub bytecode: Account<'info, GolBytecode>,
+    pub bytecode: AccountLoader<'info, GolBytecode>,
 }
 
 #[derive(Accounts)]
 pub struct GolFinalize<'info> {
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority)]
-    pub bytecode: Account<'info, GolBytecode>,
+    pub bytecode: AccountLoader<'info, GolBytecode>,
     #[account(mut, has_one = bytecode)]
     pub mem_dump: AccountLoader<'info, GolMemoryDump>,
 }
@@ -175,12 +198,14 @@ pub struct GolExecute<'info> {
     pub mem_dump: AccountLoader<'info, GolMemoryDump>,
 }
 
-#[account]
+#[account(zero_copy)]
 pub struct GolBytecode {
-    pub handle: String,
+    pub handle: [u8; MAX_HANDLE_LEN],
     pub authority: Pubkey,
     pub finalized: bool,
-    pub content: Vec<u8>,
+    pub content_size: usize,
+    // a dummy size, and transmute when using it.
+    pub content: [u8; 1],
 }
 
 #[account(zero_copy)]

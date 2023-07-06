@@ -21,7 +21,7 @@ type IxClosePool struct {
 }
 
 func (ix *IxClosePool) Process() {
-	authSeedBump := []SeedBump{{AUTH_PDA_SEED, ix.authBump}}
+	authSeedBump := []SeedBump{{VAULT_AUTH_PDA_SEED, ix.authBump}}
 
 	AbortOnError(token.CloseAccount(
 		ix.tokenAVault,

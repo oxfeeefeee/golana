@@ -61,22 +61,14 @@ func (ix *IxInit) Process() {
 	// Then, commit the data to the account
 	CommitData(ix.escrowAccount)
 
-	// The following code is pretty much the same as the original anchor version
 	vault_seeds := []SeedBump{{VAULT_PDA_SEED, ix.vaultAccountBump}}
 	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	AbortOnError(token.CreateAndInitAccount(
 		ix.initializer,
 		ix.vaultAccount,
-		ix.tokenProgram.Key,
 		ix.mint,
-		ix.initializer,
-		ix.rent,
-		vault_seeds))
-	AbortOnError(token.SetAuthority(
-		ix.vaultAccount,
-		ix.initializer,
 		vaultAuthority,
-		AuthAccountOwner, nil))
+		vault_seeds))
 	AbortOnError(token.Transfer(
 		ix.initializerDepositTokenAccount,
 		ix.vaultAccount,

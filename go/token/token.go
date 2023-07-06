@@ -9,8 +9,8 @@ func InitAccount(account, mint, auth, rent *AccountInfo, signerSeeds []SeedBump)
 	return NewSolanaError(p)
 }
 
-func CreateAndInitAccount(from, to *AccountInfo, tokenProgram *PublicKey, mint, auth, rent *AccountInfo, signerSeeds []SeedBump) error {
-	p := tokenFfi.token_create_and_init_account(from.Index, to.Index, tokenProgram, mint.Index, auth.Index, rent.Index, signerSeeds)
+func CreateAndInitAccount(from, to, mint *AccountInfo, owner *PublicKey, signerSeeds []SeedBump) error {
+	p := tokenFfi.token_create_and_init_account(from.Index, to.Index, mint.Index, owner, signerSeeds)
 	return NewSolanaError(p)
 }
 
@@ -26,6 +26,16 @@ func SetAuthority(accountOrMint, currentAuth *AccountInfo, newAuth *PublicKey, a
 
 func Transfer(from, to, auth *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
 	p := tokenFfi.token_transfer(from.Index, to.Index, auth.Index, amount, signerSeeds)
+	return NewSolanaError(p)
+}
+
+func MintTo(mint, dest, auth *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
+	p := tokenFfi.token_mint_to(mint.Index, dest.Index, auth.Index, amount, signerSeeds)
+	return NewSolanaError(p)
+}
+
+func Burn(account, mint, owner *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
+	p := tokenFfi.token_burn(account.Index, mint.Index, owner.Index, amount, signerSeeds)
 	return NewSolanaError(p)
 }
 

@@ -50,27 +50,27 @@ impl TokenFfi {
         ctx: &FfiCtx,
         from_index: usize,
         to_index: usize,
-        token_program: GosValue,
         mint_index: usize,
-        auth_index: usize,
-        rent_index: usize,
+        owner: GosValue,
         signer_seeds: GosValue,
     ) -> GosValue {
         let inst = SolanaFfi::get_instruction(ctx);
         let from = inst.accounts[from_index].clone();
         let to = inst.accounts[to_index].clone();
-        let owner = SolanaFfi::get_pub_key(ctx, &token_program)
-            .expect("ffi_token_create_and_init_account: bad token program id");
         let mint = inst.accounts[mint_index].clone();
-        let auth = inst.accounts[auth_index].clone();
-        let rent = inst.accounts[rent_index].clone();
+        let owner = SolanaFfi::get_pub_key(ctx, &owner)
+            .expect("ffi_token_create_and_init_account: bad owner");
         let result: anyhow::Result<()> = (move || {
             let len = spl_token::state::Account::LEN;
             let space = len as u64;
             let sol_rent = Rent::get()?;
             let lamports = sol_rent.minimum_balance(len);
             let ix = solana_program::system_instruction::create_account(
-                from.key, to.key, lamports, space, &owner,
+                from.key,
+                to.key,
+                lamports,
+                space,
+                &spl_token::ID,
             );
             SolanaFfi::invoke_signed(
                 &ix,
@@ -79,18 +79,13 @@ impl TokenFfi {
                 inst.gos_program_id,
             )?;
 
-            let ix = spl_token::instruction::initialize_account(
+            let ix = spl_token::instruction::initialize_account3(
                 &spl_token::ID,
                 to.key,
                 mint.key,
-                auth.key,
+                &owner,
             )?;
-            SolanaFfi::invoke_signed(
-                &ix,
-                &[to, mint, auth, rent],
-                signer_seeds,
-                inst.gos_program_id,
-            )
+            SolanaFfi::invoke_signed(&ix, &[to, mint], signer_seeds, inst.gos_program_id)
         })();
         SolanaFfi::make_err_unsafe_ptr(result)
     }
@@ -183,6 +178,68 @@ impl TokenFfi {
             SolanaFfi::invoke_signed(
                 &ix,
                 &[from.clone(), to.clone(), auth.clone()],
+                signer_seeds,
+                inst.gos_program_id,
+            )
+        })();
+        SolanaFfi::make_err_unsafe_ptr(result)
+    }
+
+    fn ffi_token_mint_to(
+        ctx: &FfiCtx,
+        mint_index: usize,
+        dest_index: usize,
+        auth_index: usize,
+        amount: u64,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let result: anyhow::Result<()> = (move || {
+            let inst = SolanaFfi::get_instruction(ctx);
+            let mint = &inst.accounts[mint_index];
+            let dest = &inst.accounts[dest_index];
+            let auth = &inst.accounts[auth_index];
+            let ix = spl_token::instruction::mint_to(
+                &spl_token::ID,
+                mint.key,
+                dest.key,
+                auth.key,
+                &[],
+                amount,
+            )?;
+            SolanaFfi::invoke_signed(
+                &ix,
+                &[mint.clone(), dest.clone(), auth.clone()],
+                signer_seeds,
+                inst.gos_program_id,
+            )
+        })();
+        SolanaFfi::make_err_unsafe_ptr(result)
+    }
+
+    fn ffi_token_burn(
+        ctx: &FfiCtx,
+        account_index: usize,
+        mint_index: usize,
+        owner_index: usize,
+        amount: u64,
+        signer_seeds: GosValue,
+    ) -> GosValue {
+        let result: anyhow::Result<()> = (move || {
+            let inst = SolanaFfi::get_instruction(ctx);
+            let account = &inst.accounts[account_index];
+            let mint = &inst.accounts[mint_index];
+            let owner = &inst.accounts[owner_index];
+            let ix = spl_token::instruction::burn(
+                &spl_token::ID,
+                account.key,
+                mint.key,
+                owner.key,
+                &[],
+                amount,
+            )?;
+            SolanaFfi::invoke_signed(
+                &ix,
+                &[account.clone(), mint.clone(), owner.clone()],
                 signer_seeds,
                 inst.gos_program_id,
             )

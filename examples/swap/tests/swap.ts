@@ -15,6 +15,8 @@ describe("swap", async () => {
 
         const infoAccount = Keypair.generate();
         const mintAuthority = Keypair.generate();
+        const vaultA = Keypair.generate();
+        const vaultB = Keypair.generate();
 
         const creator = Keypair.generate();
         const depositor = Keypair.generate();
@@ -28,19 +30,16 @@ describe("swap", async () => {
         let mintB: PublicKey;
         let mintLP: PublicKey;
 
-        let vault_account_a_pda: PublicKey;
-        let vault_account_a_bump: number;
-        let vault_account_b_pda: PublicKey;
-        let vault_account_b_bump: number;
         let vault_authority_pda: PublicKey;
         let vault_authority_bump: number;
+        let lp_token_mint_auth_pda: PublicKey;
+        let lp_token_mint_auth_bump: number;
 
 
 
         it("Initialize program state", async () => {
-            ([vault_account_a_pda, vault_account_a_bump] = await swap.findAddr("token-a"));
-            ([vault_account_b_pda, vault_account_b_bump] = await swap.findAddr("token-b"));
-            ([vault_authority_pda, vault_authority_bump] = await swap.findAddr("auth"));
+            ([vault_authority_pda, vault_authority_bump] = await swap.findAddr("vault-auth"));
+            ([lp_token_mint_auth_pda, lp_token_mint_auth_bump] = await swap.findAddr("mint-auth"));
 
             // Airdropping tokens
             await provider.connection.confirmTransaction(
@@ -106,7 +105,7 @@ describe("swap", async () => {
             mintLP = await createMint(
                 provider.connection,
                 creator,
-                mintAuthority.publicKey,
+                lp_token_mint_auth_pda,
                 null,
                 15
             );
@@ -130,30 +129,27 @@ describe("swap", async () => {
                 depositor.publicKey,
             );
 
+            await mintTo(
+                provider.connection,
+                creator,
+                mintA,
+                depositorTokenAccountA.address,
+                mintAuthority.publicKey,
+                10000,
+                [mintAuthority],
+            );
 
-            // await mintTo(
-            //     provider.connection,
-            //     creator,
-            //     mintA,
-            //     initializerTokenAccountA,
-            //     mintAuthority.publicKey,
-            //     initializerAmount,
-            //     [mintAuthority],
-            // );
-
-            // await mintTo(
-            //     provider.connection,
-            //     creator,
-            //     mintB,
-            //     takerTokenAccountB,
-            //     mintAuthority.publicKey,
-            //     takerAmount,
-            //     [mintAuthority],
-            // );
+            await mintTo(
+                provider.connection,
+                creator,
+                mintB,
+                depositorTokenAccountB.address,
+                mintAuthority.publicKey,
+                10000,
+                [mintAuthority],
+            );
 
             console.log(creator.publicKey.toString());
-            console.log(vault_account_a_pda.toString(), vault_account_a_bump);
-            console.log(vault_account_b_pda.toString(), vault_account_b_bump);
             console.log(vault_authority_pda.toString());
             console.log(infoAccount.publicKey.toString());
             console.log(mintA.toString());
@@ -163,13 +159,13 @@ describe("swap", async () => {
 
         it("IxCreatePool", async () => {
             await swap.methods
-                .IxCreatePool(new BN(100), vault_account_a_bump, vault_account_b_bump)
+                .IxCreatePool(new BN(100))
                 .accounts({
                     creator: creator.publicKey,
                     mintA: mintA,
                     mintB: mintB,
-                    tokenAVault: vault_account_a_pda,
-                    tokenBVault: vault_account_b_pda,
+                    tokenAVault: vaultA.publicKey,
+                    tokenBVault: vaultB.publicKey,
                     poolInfo: infoAccount.publicKey,
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
@@ -179,14 +175,14 @@ describe("swap", async () => {
                     ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
                     ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
                 ])
-                .signers([creator])
+                .signers([creator, vaultA, vaultB])
                 .rpc({ skipPreflight: true });
 
-            const _vaultA = await getAccount(provider.connection, vault_account_a_pda);
+            const _vaultA = await getAccount(provider.connection, vaultA.publicKey);
             // Check that the new owner is the PDA.
             assert.ok(_vaultA.owner.equals(vault_authority_pda));
 
-            const _vaultB = await getAccount(provider.connection, vault_account_b_pda);
+            const _vaultB = await getAccount(provider.connection, vaultB.publicKey);
             // Check that the new owner is the PDA.
             assert.ok(_vaultB.owner.equals(vault_authority_pda));
         });
@@ -195,15 +191,16 @@ describe("swap", async () => {
 
         it("IxDeposit", async () => {
             await swap.methods
-                .IxDeposit(new BN(100), new BN(10), vault_authority_bump)
+                .IxDeposit(new BN(100), new BN(10), lp_token_mint_auth_bump)
                 .accounts({
                     depositor: depositor.publicKey,
                     mintLiquidity: mintLP,
+                    mintLpAuth: lp_token_mint_auth_pda,
                     tokenA: depositorTokenAccountA.address,
                     tokenB: depositorTokenAccountB.address,
                     tokenLiquidity: depositorTokenAccountLP.address,
-                    tokenAVault: vault_account_a_pda,
-                    tokenBVault: vault_account_b_pda,
+                    tokenAVault: vaultA.publicKey,
+                    tokenBVault: vaultB.publicKey,
                     vaultAuthority: vault_authority_pda,
                     poolInfo: infoAccount.publicKey,
                     systemProgram: SystemProgram.programId,
@@ -217,27 +214,30 @@ describe("swap", async () => {
                 ])
                 .signers([depositor])
                 .rpc({ skipPreflight: true });
+
+            const _lpAccount = await getAccount(provider.connection, depositorTokenAccountLP.address);
+            console.log(_lpAccount.amount.toString());
         });
 
-        it("IxClosePool", async () => {
-            await swap.methods
-                .IxClosePool(vault_authority_bump)
-                .accounts({
-                    creator: creator.publicKey,
-                    tokenAVault: vault_account_a_pda,
-                    tokenBVault: vault_account_b_pda,
-                    vaultAuthority: vault_authority_pda,
-                    poolInfo: infoAccount.publicKey,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
-                .signers([creator])
-                .rpc({ skipPreflight: true });
-        });
+        // it("IxClosePool", async () => {
+        //     await swap.methods
+        //         .IxClosePool(vault_authority_bump)
+        //         .accounts({
+        //             creator: creator.publicKey,
+        //             tokenAVault: vault_account_a_pda,
+        //             tokenBVault: vault_account_b_pda,
+        //             vaultAuthority: vault_authority_pda,
+        //             poolInfo: infoAccount.publicKey,
+        //             systemProgram: SystemProgram.programId,
+        //             tokenProgram: TOKEN_PROGRAM_ID,
+        //         })
+        //         .preInstructions([
+        //             ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+        //             ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+        //         ])
+        //         .signers([creator])
+        //         .rpc({ skipPreflight: true });
+        // });
 
     } catch (e) {
         console.error(e);

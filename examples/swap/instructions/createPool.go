@@ -5,9 +5,8 @@ import (
 	"token"
 )
 
-const AUTH_PDA_SEED = "auth"
-const TOKEN_A_VAULT_SEED = "token-a"
-const TOKEN_B_VAULT_SEED = "token-b"
+const VAULT_AUTH_PDA_SEED = "vault-auth"
+const LP_MINT_AUTH_PDA_SEED = "mint-auth"
 
 type poolData struct {
 	creator     PublicKey
@@ -23,8 +22,8 @@ type IxCreatePool struct {
 	mintA *AccountInfo
 	mintB *AccountInfo
 	// The vault holding token A/B, i.e. the SPL token account
-	tokenAVault *AccountInfo `golana:"mut"`
-	tokenBVault *AccountInfo `golana:"mut"`
+	tokenAVault *AccountInfo `golana:"mut, signer"`
+	tokenBVault *AccountInfo `golana:"mut, signer"`
 	// The pool account storing the pool data
 	poolInfo      *AccountInfo `golana:"mut"`
 	systemProgram *AccountInfo
@@ -34,43 +33,25 @@ type IxCreatePool struct {
 	poolInfo_data *poolData `golana:"init"`
 
 	// The fee rate, in basis points, i.e. 1000 = 10%
-	feeRate         uint64
-	tokenAVaultBump uint8
-	tokenBVaultBump uint8
+	feeRate uint64
 }
 
 func (ix *IxCreatePool) Process() {
-	vaultASeedBump := []SeedBump{{TOKEN_A_VAULT_SEED, ix.tokenAVaultBump}}
-	vaultBSeedBump := []SeedBump{{TOKEN_B_VAULT_SEED, ix.tokenBVaultBump}}
-	vaultAuthority, _ := FindProgramAddress(AUTH_PDA_SEED, GetId())
+	vaultAuthority, _ := FindProgramAddress(VAULT_AUTH_PDA_SEED, GetId())
 
 	// Create the vaults
 	AbortOnError(token.CreateAndInitAccount(
 		ix.creator,
 		ix.tokenAVault,
-		ix.tokenProgram.Key,
 		ix.mintA,
-		ix.creator,
-		ix.rent,
-		vaultASeedBump))
-	AbortOnError(token.SetAuthority(
-		ix.tokenAVault,
-		ix.creator,
 		vaultAuthority,
-		AuthAccountOwner, nil))
+		nil))
 	AbortOnError(token.CreateAndInitAccount(
 		ix.creator,
 		ix.tokenBVault,
-		ix.tokenProgram.Key,
 		ix.mintB,
-		ix.creator,
-		ix.rent,
-		vaultBSeedBump))
-	AbortOnError(token.SetAuthority(
-		ix.tokenBVault,
-		ix.creator,
 		vaultAuthority,
-		AuthAccountOwner, nil))
+		nil))
 
 	// Initialize the pool account
 	data := new(poolData)

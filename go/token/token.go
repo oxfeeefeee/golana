@@ -4,18 +4,13 @@ import (
 	. "solana"
 )
 
-func InitAccount(account, mint, auth, rent *AccountInfo, signerSeeds []SeedBump) error {
-	p := tokenFfi.token_init_account(account.Index, mint.Index, auth.Index, rent.Index, signerSeeds)
-	return NewSolanaError(p)
-}
-
 func CreateAndInitAccount(from, to, mint *AccountInfo, owner *PublicKey, signerSeeds []SeedBump) error {
 	p := tokenFfi.token_create_and_init_account(from.Index, to.Index, mint.Index, owner, signerSeeds)
 	return NewSolanaError(p)
 }
 
-func CloseAccount(account, dest, auth *AccountInfo, signerSeeds []SeedBump) error {
-	p := tokenFfi.token_close_account(account.Index, dest.Index, auth.Index, signerSeeds)
+func CloseAccount(account, dest, owner *AccountInfo, signerSeeds []SeedBump) error {
+	p := tokenFfi.token_close_account(account.Index, dest.Index, owner.Index, signerSeeds)
 	return NewSolanaError(p)
 }
 
@@ -34,8 +29,8 @@ func MintTo(mint, dest, auth *AccountInfo, amount uint64, signerSeeds []SeedBump
 	return NewSolanaError(p)
 }
 
-func Burn(account, mint, owner *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
-	p := tokenFfi.token_burn(account.Index, mint.Index, owner.Index, amount, signerSeeds)
+func Burn(account, mint, auth *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
+	p := tokenFfi.token_burn(account.Index, mint.Index, auth.Index, amount, signerSeeds)
 	return NewSolanaError(p)
 }
 

@@ -16,36 +16,6 @@ pub struct TokenFfi;
 
 #[ffi_impl]
 impl TokenFfi {
-    fn ffi_token_init_account(
-        ctx: &FfiCtx,
-        account_index: usize,
-        mint_index: usize,
-        auth_index: usize,
-        rent_index: usize,
-        signer_seeds: GosValue,
-    ) -> GosValue {
-        let inst = SolanaFfi::get_instruction(ctx);
-        let account = inst.accounts[account_index].clone();
-        let mint = inst.accounts[mint_index].clone();
-        let auth = inst.accounts[auth_index].clone();
-        let rent = inst.accounts[rent_index].clone();
-        let result: anyhow::Result<()> = (move || {
-            let ix = spl_token::instruction::initialize_account(
-                &spl_token::ID,
-                account.key,
-                mint.key,
-                auth.key,
-            )?;
-            SolanaFfi::invoke_signed(
-                &ix,
-                &[account, mint, auth, rent],
-                signer_seeds,
-                inst.gos_program_id,
-            )
-        })();
-        SolanaFfi::make_err_unsafe_ptr(result)
-    }
-
     fn ffi_token_create_and_init_account(
         ctx: &FfiCtx,
         from_index: usize,
@@ -94,24 +64,24 @@ impl TokenFfi {
         ctx: &FfiCtx,
         account_index: usize,
         dest_index: usize,
-        auth_index: usize,
+        owner_index: usize,
         signer_seeds: GosValue,
     ) -> GosValue {
         let result: anyhow::Result<()> = (move || {
             let inst = SolanaFfi::get_instruction(ctx);
             let account = &inst.accounts[account_index];
             let dest = &inst.accounts[dest_index];
-            let auth = &inst.accounts[auth_index];
+            let owner = &inst.accounts[owner_index];
             let ix = spl_token::instruction::close_account(
                 &spl_token::ID,
                 account.key,
                 dest.key,
-                auth.key,
+                owner.key,
                 &[], // TODO: support multisig
             )?;
             SolanaFfi::invoke_signed(
                 &ix,
-                &[account.clone(), dest.clone(), auth.clone()],
+                &[account.clone(), dest.clone(), owner.clone()],
                 signer_seeds,
                 inst.gos_program_id,
             )
@@ -220,7 +190,7 @@ impl TokenFfi {
         ctx: &FfiCtx,
         account_index: usize,
         mint_index: usize,
-        owner_index: usize,
+        auth_index: usize,
         amount: u64,
         signer_seeds: GosValue,
     ) -> GosValue {
@@ -228,18 +198,18 @@ impl TokenFfi {
             let inst = SolanaFfi::get_instruction(ctx);
             let account = &inst.accounts[account_index];
             let mint = &inst.accounts[mint_index];
-            let owner = &inst.accounts[owner_index];
+            let auth = &inst.accounts[auth_index];
             let ix = spl_token::instruction::burn(
                 &spl_token::ID,
                 account.key,
                 mint.key,
-                owner.key,
+                auth.key,
                 &[],
                 amount,
             )?;
             SolanaFfi::invoke_signed(
                 &ix,
-                &[account.clone(), mint.clone(), owner.clone()],
+                &[account.clone(), mint.clone(), auth.clone()],
                 signer_seeds,
                 inst.gos_program_id,
             )

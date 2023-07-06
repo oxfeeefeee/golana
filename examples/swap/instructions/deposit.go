@@ -27,7 +27,6 @@ type IxDeposit struct {
 	systemProgram          *AccountInfo
 	tokenProgram           *AccountInfo
 	associatedTokenProgram *AccountInfo
-	rent                   *AccountInfo
 
 	// The amount of token A/B to deposit
 	amountA      uint64

@@ -206,7 +206,6 @@ describe("swap", async () => {
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                    rent: SYSVAR_RENT_PUBKEY,
                 })
                 .preInstructions([
                     ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),

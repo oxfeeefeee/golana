@@ -23,13 +23,14 @@ pub mod loader {
     pub fn gol_initialize(ctx: Context<GolInitialize>, handle: String) -> Result<()> {
         DualMalloc::set_use_smalloc(true);
 
-        let mem_dump_key = ctx.accounts.mem_dump.key();
+        let bytecode = &mut ctx.accounts.bytecode.load_init()?;
         let mem_dump = &mut ctx.accounts.mem_dump.load_init()?;
         initialize_impl(
             &ctx.accounts.authority,
-            &mut ctx.accounts.bytecode,
-            &mem_dump_key,
+            bytecode,
+            &ctx.accounts.bytecode.key(),
             mem_dump,
+            &ctx.accounts.mem_dump.key(),
             handle,
         )
     }
@@ -37,13 +38,14 @@ pub mod loader {
     pub fn gol_clear(ctx: Context<GolClear>, handle: String) -> Result<()> {
         DualMalloc::set_use_smalloc(true);
 
-        let mem_dump_key = ctx.accounts.mem_dump.key();
+        let bytecode = &mut ctx.accounts.bytecode.load_mut()?;
         let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
         initialize_impl(
             &ctx.accounts.authority,
-            &mut ctx.accounts.bytecode,
-            &mem_dump_key,
+            bytecode,
+            &ctx.accounts.bytecode.key(),
             mem_dump,
+            &ctx.accounts.mem_dump.key(),
             handle,
         )
     }
@@ -119,25 +121,25 @@ pub mod loader {
 
 fn initialize_impl(
     auth: &Signer,
-    bytecode: &mut AccountLoader<GolBytecode>,
-    mem_dump_key: &Pubkey,
+    bytecode: &mut GolBytecode,
+    bytecode_key: &Pubkey,
     mem_dump: &mut GolMemoryDump,
+    mem_dump_key: &Pubkey,
     handle: String,
 ) -> Result<()> {
     let seed = String::from("BC") + &handle;
     let bc_pk = Pubkey::create_with_seed(auth.key, &seed, &ID).unwrap();
-    require!(bytecode.key() == bc_pk, GolError::WrongHandle);
+    require!(bytecode_key == &bc_pk, GolError::WrongHandle);
 
     let seed = String::from("MM") + &handle;
     let mm_pk = Pubkey::create_with_seed(auth.key, &seed, &ID).unwrap();
     require!(mem_dump_key == &mm_pk, GolError::WrongHandle);
 
-    let bc_loaded = &mut bytecode.load_mut()?;
-    bc_loaded.handle = string_to_array(&handle)?;
-    bc_loaded.authority = auth.key();
-    bc_loaded.finalized = false;
-    bc_loaded.content_size = 0;
-    bc_loaded.content = [0];
+    bytecode.handle = string_to_array(&handle)?;
+    bytecode.authority = auth.key();
+    bytecode.finalized = false;
+    bytecode.content_size = 0;
+    bytecode.content = [0];
 
     mem_dump.bytecode = bc_pk;
     mem_dump.meta_ptr = 0;

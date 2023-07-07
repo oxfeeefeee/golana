@@ -4,6 +4,19 @@ import (
 	. "solana"
 )
 
+type AuthorityType uint8
+
+const (
+	// Authority to mint new tokens
+	AuthMintTokens AuthorityType = iota
+	// Authority to freeze any account associated with the Mint
+	AuthFreezeAccount
+	// Owner of a given token account
+	AuthAccountOwner
+	// Authority to close a token account
+	AuthCloseAccount
+)
+
 func CreateAndInitAccount(from, to, mint *AccountInfo, owner *PublicKey, signerSeeds []SeedBump) error {
 	p := tokenFfi.token_create_and_init_account(from.Index, to.Index, mint.Index, owner, signerSeeds)
 	return NewSolanaError(p)

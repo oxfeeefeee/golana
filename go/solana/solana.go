@@ -11,19 +11,6 @@ type SeedBump struct {
 	Bump uint8
 }
 
-type AuthorityType uint8
-
-const (
-	// Authority to mint new tokens
-	AuthMintTokens AuthorityType = iota
-	// Authority to freeze any account associated with the Mint
-	AuthFreezeAccount
-	// Owner of a given token account
-	AuthAccountOwner
-	// Authority to close a token account
-	AuthCloseAccount
-)
-
 type AccountInfo struct {
 	// Public key of the account
 	Key *PublicKey

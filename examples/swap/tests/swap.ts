@@ -187,8 +187,6 @@ describe("swap", async () => {
             assert.ok(_vaultB.owner.equals(vault_authority_pda));
         });
 
-
-
         it("IxDeposit", async () => {
             await swap.methods
                 .IxDeposit(new BN(100), new BN(10), lp_token_mint_auth_bump)
@@ -218,25 +216,52 @@ describe("swap", async () => {
             console.log(_lpAccount.amount.toString());
         });
 
-        // it("IxClosePool", async () => {
-        //     await swap.methods
-        //         .IxClosePool(vault_authority_bump)
-        //         .accounts({
-        //             creator: creator.publicKey,
-        //             tokenAVault: vault_account_a_pda,
-        //             tokenBVault: vault_account_b_pda,
-        //             vaultAuthority: vault_authority_pda,
-        //             poolInfo: infoAccount.publicKey,
-        //             systemProgram: SystemProgram.programId,
-        //             tokenProgram: TOKEN_PROGRAM_ID,
-        //         })
-        //         .preInstructions([
-        //             ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-        //             ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-        //         ])
-        //         .signers([creator])
-        //         .rpc({ skipPreflight: true });
-        // });
+        it("IxWithdraw", async () => {
+            await swap.methods
+                .IxWithdraw(new BN(1), vault_authority_bump)
+                .accounts({
+                    depositor: depositor.publicKey,
+                    mintLiquidity: mintLP,
+                    mintLpAuth: lp_token_mint_auth_pda,
+                    tokenA: depositorTokenAccountA.address,
+                    tokenB: depositorTokenAccountB.address,
+                    tokenLiquidity: depositorTokenAccountLP.address,
+                    tokenAVault: vaultA.publicKey,
+                    tokenBVault: vaultB.publicKey,
+                    vaultAuthority: vault_authority_pda,
+                    poolInfo: infoAccount.publicKey,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                ])
+                .signers([depositor])
+                .rpc({ skipPreflight: true });
+
+            const _lpAccount = await getAccount(provider.connection, depositorTokenAccountLP.address);
+            console.log(_lpAccount.amount.toString());
+        });
+
+        it("IxClosePool", async () => {
+            await swap.methods
+                .IxClosePool(vault_authority_bump)
+                .accounts({
+                    creator: creator.publicKey,
+                    tokenAVault: vaultA.publicKey,
+                    tokenBVault: vaultB.publicKey,
+                    vaultAuthority: vault_authority_pda,
+                    poolInfo: infoAccount.publicKey,
+                    systemProgram: SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                ])
+                .signers([creator])
+                .rpc({ skipPreflight: true });
+        });
 
     } catch (e) {
         console.error(e);

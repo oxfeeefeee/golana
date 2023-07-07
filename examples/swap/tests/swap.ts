@@ -20,11 +20,14 @@ describe("swap", async () => {
 
         const creator = Keypair.generate();
         const depositor = Keypair.generate();
-        const swapper = Keypair.generate();
+        const trader = Keypair.generate();
 
         let depositorTokenAccountA: Account;
         let depositorTokenAccountB: Account;
         let depositorTokenAccountLP: Account;
+
+        let traderTokenAccountA: Account;
+        let traderTokenAccountB: Account;
 
         let mintA: PublicKey;
         let mintB: PublicKey;
@@ -51,7 +54,7 @@ describe("swap", async () => {
                 "processed"
             );
             await provider.connection.confirmTransaction(
-                await provider.connection.requestAirdrop(swapper.publicKey, 1000000000),
+                await provider.connection.requestAirdrop(trader.publicKey, 1000000000),
                 "processed"
             );
 
@@ -129,6 +132,19 @@ describe("swap", async () => {
                 depositor.publicKey,
             );
 
+            traderTokenAccountA = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                trader,
+                mintA,
+                trader.publicKey,
+            );
+            traderTokenAccountB = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                trader,
+                mintB,
+                trader.publicKey,
+            );
+
             await mintTo(
                 provider.connection,
                 creator,
@@ -146,6 +162,26 @@ describe("swap", async () => {
                 depositorTokenAccountB.address,
                 mintAuthority.publicKey,
                 10000,
+                [mintAuthority],
+            );
+
+            await mintTo(
+                provider.connection,
+                creator,
+                mintA,
+                traderTokenAccountA.address,
+                mintAuthority.publicKey,
+                1000,
+                [mintAuthority],
+            );
+
+            await mintTo(
+                provider.connection,
+                creator,
+                mintB,
+                traderTokenAccountB.address,
+                mintAuthority.publicKey,
+                2000,
                 [mintAuthority],
             );
 
@@ -241,6 +277,32 @@ describe("swap", async () => {
 
             const _lpAccount = await getAccount(provider.connection, depositorTokenAccountLP.address);
             console.log(_lpAccount.amount.toString());
+        });
+
+        it("IxTrade", async () => {
+            await swap.methods
+                .IxTrade(new BN(1), new BN(2), vault_authority_bump)
+                .accounts({
+                    trader: trader.publicKey,
+                    tokenA: traderTokenAccountA.address,
+                    tokenB: traderTokenAccountB.address,
+                    tokenAVault: vaultA.publicKey,
+                    tokenBVault: vaultB.publicKey,
+                    vaultAuthority: vault_authority_pda,
+                    poolInfo: infoAccount.publicKey,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                ])
+                .signers([trader])
+                .rpc({ skipPreflight: true });
+
+            const _traderA = await getAccount(provider.connection, traderTokenAccountA.address);
+            console.log(_traderA.amount.toString());
+            const _traderB = await getAccount(provider.connection, traderTokenAccountB.address);
+            console.log(_traderB.amount.toString());
         });
 
         it("IxClosePool", async () => {

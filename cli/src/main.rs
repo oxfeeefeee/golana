@@ -42,6 +42,8 @@ enum Commands {
         #[arg(short, long)]
         path: Option<PathBuf>,
         #[arg(short, long)]
+        rebuild: bool,
+        #[arg(short, long)]
         force: bool,
     },
 
@@ -77,12 +79,16 @@ fn processor() -> Result<()> {
     let current_dir = config::current_dir()?;
     if let Some(path) = config::get_full_path(&current_dir) {
         let cfg = config::read_config(&path)?;
-        match &cli.command.unwrap() {
-            Commands::Build { out_name } => build::build(
+
+        let build = |out_name: &Option<String>| {
+            build::build(
                 out_name.as_ref().map(|x| &**x),
                 &cfg.project.out_dir,
                 &cfg.project.name,
-            ),
+            )
+        };
+        match &cli.command.unwrap() {
+            Commands::Build { out_name } => build(out_name),
             Commands::Airdrop { amount } => {
                 println!(
                     "Airdrop {} lamports to wallet at {}",
@@ -91,7 +97,16 @@ fn processor() -> Result<()> {
                 );
                 airdrop::airdrop(amount.unwrap(), cfg.get_provider()?)
             }
-            Commands::Deploy { path, force } => {
+            Commands::Deploy {
+                path,
+                rebuild,
+                force,
+            } => {
+                if *rebuild {
+                    print!("Rebuilding...\n");
+                    build(&None)?;
+                    print!("Rebuilt!\n");
+                }
                 let path = path.clone().unwrap_or_else(|| {
                     // Get default path by adding project name to out_dir
                     let mut path = cfg.project.out_dir.clone();

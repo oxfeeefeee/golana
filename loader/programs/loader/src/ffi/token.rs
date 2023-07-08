@@ -16,7 +16,7 @@ pub struct TokenFfi;
 
 #[ffi_impl]
 impl TokenFfi {
-    fn ffi_token_unpack_mint(ctx: &FfiCtx, account_index: usize) -> (GosValue, GosValue) {
+    fn ffi_unpack_mint(ctx: &FfiCtx, account_index: usize) -> (GosValue, GosValue) {
         let inst = SolanaFfi::get_instruction(ctx);
         let account = &inst.accounts[account_index];
         let mint = Mint::unpack(&account.data.borrow());
@@ -39,7 +39,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_result(result)
     }
 
-    fn ffi_token_create_and_init_account(
+    fn ffi_create_and_init_account(
         ctx: &FfiCtx,
         from_index: usize,
         to_index: usize,
@@ -51,8 +51,8 @@ impl TokenFfi {
         let from = inst.accounts[from_index].clone();
         let to = inst.accounts[to_index].clone();
         let mint = inst.accounts[mint_index].clone();
-        let owner = SolanaFfi::get_pub_key(ctx, &owner)
-            .expect("ffi_token_create_and_init_account: bad owner");
+        let owner =
+            SolanaFfi::get_pub_key(ctx, &owner).expect("ffi_create_and_init_account: bad owner");
         let result: anyhow::Result<()> = (move || {
             let len = spl_token::state::Account::LEN;
             let space = len as u64;
@@ -83,7 +83,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_empty_result(result)
     }
 
-    fn ffi_token_close_account(
+    fn ffi_close_account(
         ctx: &FfiCtx,
         account_index: usize,
         dest_index: usize,
@@ -112,7 +112,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_empty_result(result)
     }
 
-    fn ffi_token_set_authority(
+    fn ffi_set_authority(
         ctx: &FfiCtx,
         account_or_mint_index: usize,
         current_auth_index: usize,
@@ -147,7 +147,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_empty_result(result)
     }
 
-    fn ffi_token_transfer(
+    fn ffi_transfer(
         ctx: &FfiCtx,
         from_index: usize,
         to_index: usize,
@@ -178,7 +178,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_empty_result(result)
     }
 
-    fn ffi_token_mint_to(
+    fn ffi_mint_to(
         ctx: &FfiCtx,
         mint_index: usize,
         dest_index: usize,
@@ -209,7 +209,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_empty_result(result)
     }
 
-    fn ffi_token_burn(
+    fn ffi_burn(
         ctx: &FfiCtx,
         account_index: usize,
         mint_index: usize,
@@ -240,7 +240,7 @@ impl TokenFfi {
         SolanaFfi::unwrap_empty_result(result)
     }
 
-    fn ffi_token_create_associated_account(
+    fn ffi_create_associated_account(
         ctx: &FfiCtx,
         payer_index: usize,
         dest_index: usize,

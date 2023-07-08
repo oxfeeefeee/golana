@@ -1,6 +1,7 @@
 use crate::goscript::Instruction;
 use go_vm::types::*;
 use go_vm::*;
+use solana_program::program_option::COption;
 use solana_program::{self, account_info::AccountInfo, pubkey::Pubkey};
 use std::rc::Rc;
 
@@ -79,7 +80,7 @@ impl SolanaFfi {
             from.key, to.key, lamports, space, &owner_pk,
         );
         let result = Self::invoke_signed(&ix, &[from, to], signer_seeds, inst.gos_program_id);
-        Self::make_err_unsafe_ptr(result)
+        Self::unwrap_empty_result(result)
     }
 
     pub(crate) fn invoke_signed(
@@ -125,7 +126,26 @@ impl SolanaFfi {
     }
 
     #[inline]
-    pub(crate) fn make_err_unsafe_ptr<T>(result: anyhow::Result<T>) -> GosValue {
+    pub(crate) fn make_pub_key_nilable_ptr(ctx: &FfiCtx, key: COption<Pubkey>) -> GosValue {
+        match key {
+            COption::Some(key) => Self::make_pub_key_ptr(ctx, key),
+            COption::None => FfiCtx::new_nil(ValueType::Pointer),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn unwrap_result(result: anyhow::Result<GosValue>) -> (GosValue, GosValue) {
+        match result {
+            Ok(v) => (v, FfiCtx::new_nil(ValueType::UnsafePtr)),
+            Err(e) => (
+                FfiCtx::new_nil(ValueType::Void),
+                FfiCtx::new_unsafe_ptr(Rc::new(Error(e))),
+            ),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn unwrap_empty_result(result: anyhow::Result<()>) -> GosValue {
         match result {
             Ok(_) => FfiCtx::new_nil(ValueType::UnsafePtr),
             Err(e) => FfiCtx::new_unsafe_ptr(Rc::new(Error(e))),

@@ -7,7 +7,7 @@ use spl_associated_token_account::{
     self, instruction::create_associated_token_account,
     instruction::create_associated_token_account_idempotent,
 };
-use spl_token::{self, instruction::AuthorityType};
+use spl_token::{self, instruction::AuthorityType, state::Mint};
 
 use super::solana::SolanaFfi;
 
@@ -16,6 +16,29 @@ pub struct TokenFfi;
 
 #[ffi_impl]
 impl TokenFfi {
+    fn ffi_token_unpack_mint(ctx: &FfiCtx, account_index: usize) -> (GosValue, GosValue) {
+        let inst = SolanaFfi::get_instruction(ctx);
+        let account = &inst.accounts[account_index];
+        let mint = Mint::unpack(&account.data.borrow());
+        let result: anyhow::Result<GosValue> = (move || {
+            let mint = mint?;
+            let mint_authority = SolanaFfi::make_pub_key_nilable_ptr(ctx, mint.mint_authority);
+            let supply = GosValue::from(mint.supply);
+            let decimals = GosValue::from(mint.decimals);
+            let is_initialized = GosValue::from(mint.is_initialized);
+            let freeze_authority = SolanaFfi::make_pub_key_nilable_ptr(ctx, mint.freeze_authority);
+            let mint = ctx.new_struct(vec![
+                mint_authority,
+                supply,
+                decimals,
+                is_initialized,
+                freeze_authority,
+            ]);
+            Ok(mint)
+        })();
+        SolanaFfi::unwrap_result(result)
+    }
+
     fn ffi_token_create_and_init_account(
         ctx: &FfiCtx,
         from_index: usize,
@@ -57,7 +80,7 @@ impl TokenFfi {
             )?;
             SolanaFfi::invoke_signed(&ix, &[to, mint], signer_seeds, inst.gos_program_id)
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn ffi_token_close_account(
@@ -86,7 +109,7 @@ impl TokenFfi {
                 inst.gos_program_id,
             )
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn ffi_token_set_authority(
@@ -121,7 +144,7 @@ impl TokenFfi {
                 inst.gos_program_id,
             )
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn ffi_token_transfer(
@@ -152,7 +175,7 @@ impl TokenFfi {
                 inst.gos_program_id,
             )
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn ffi_token_mint_to(
@@ -183,7 +206,7 @@ impl TokenFfi {
                 inst.gos_program_id,
             )
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn ffi_token_burn(
@@ -214,7 +237,7 @@ impl TokenFfi {
                 inst.gos_program_id,
             )
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn ffi_token_create_associated_account(
@@ -257,7 +280,7 @@ impl TokenFfi {
                 inst.gos_program_id,
             )
         })();
-        SolanaFfi::make_err_unsafe_ptr(result)
+        SolanaFfi::unwrap_empty_result(result)
     }
 
     fn into_authority_type(val: u8) -> Result<AuthorityType> {

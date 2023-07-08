@@ -12,6 +12,8 @@ func init() {
 }
 
 type ffiToken interface {
+	token_unpack_mint(account *AccountInfo) (*Mint, unsafe.Pointer)
+
 	token_create_and_init_account(from, to, mint uint, owner *PublicKey, signerSeeds []SeedBump) unsafe.Pointer
 
 	token_close_account(account, dest, owner uint, signerSeeds []SeedBump) unsafe.Pointer

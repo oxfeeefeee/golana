@@ -56,6 +56,7 @@ func CommitEverything() {
 
 func AbortOnError(e error) {
 	if e != nil {
+		// todo: It doesn't work currnetly!!!, need to add hook to the VM
 		panic(e)
 	}
 }

@@ -1,6 +1,8 @@
 package instructions
 
 import (
+	"fmt2"
+	"math2"
 	. "solana"
 	"token"
 )
@@ -45,6 +47,13 @@ func (ix *IxDeposit) Process() {
 		ix.associatedTokenProgram,
 		true,
 	))
+
+	fmt2.Println("assdfsdfdsfsd")
+
+	// Calculate numbers
+	var x uint64 = 4 * 1_000_000_000
+	var y uint64 = 16 * 1_000_000_000
+	fmt2.Println(math2.GeometryMean(x, y))
 
 	// Transfer token A/B to the pool
 	AbortOnError(token.Transfer(

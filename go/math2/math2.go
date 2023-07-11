@@ -1,15 +1,15 @@
 package math2
 
-var nativeMath ffiMath2
+var mathFfi ffiMath2
 
 func init() {
-	nativeMath = ffi(ffiMath2, "math2")
+	mathFfi = ffi(ffiMath2, "math2")
 }
 
 type ffiMath2 interface {
-	geometry_mean(a ...interface{})
+	geometry_mean(x, y uint64) uint64
 }
 
-func GeometryMean(a ...interface{}) {
-	nativeMath.geometry_mean(a...)
+func GeometryMean(x, y uint64) uint64 {
+	return mathFfi.geometry_mean(x, y)
 }

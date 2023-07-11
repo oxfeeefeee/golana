@@ -25,6 +25,7 @@ solana-program = "1.10.41"
 borsh = "0.9.3" 
 spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
 spl-associated-token-account = {version = "1.1.1", features = ["no-entrypoint"]}
+spl-math = {version = "0.1.0", features = ["no-entrypoint"]}
 
 [dependencies.go-vm] 
 features = ["btree_map"]

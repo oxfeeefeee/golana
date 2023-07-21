@@ -20,13 +20,14 @@ type IxTrade struct {
 
 	tokenProgram *AccountInfo
 
-	// The amount of token A/B to deposit
-	amountA       uint64
-	amountB       uint64
-	vaultAuthBump uint8
+	// Trade amountA for at least expectedAmountB
+	amountA         uint64
+	expectedAmountB uint64
+	vaultAuthBump   uint8
 }
 
 func (ix *IxTrade) Process() {
+
 	vaultAuthSeedBump := []SeedBump{{VAULT_AUTH_PDA_SEED, ix.vaultAuthBump}}
 	// Transfer token A to the pool
 	AbortOnError(token.Transfer(

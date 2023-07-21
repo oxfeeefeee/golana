@@ -12,7 +12,9 @@ func init() {
 }
 
 type ffiToken interface {
-	unpack_mint(account *AccountInfo) (*Mint, unsafe.Pointer)
+	unpack_mint(account uint) (*Mint, unsafe.Pointer)
+
+	unpack_account(account uint) (*Account, unsafe.Pointer)
 
 	create_and_init_account(from, to, mint uint, owner *PublicKey, signerSeeds []SeedBump) unsafe.Pointer
 

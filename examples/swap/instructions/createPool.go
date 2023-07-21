@@ -9,10 +9,11 @@ const VAULT_AUTH_PDA_SEED = "vault-auth"
 const LP_MINT_AUTH_PDA_SEED = "mint-auth"
 
 type poolData struct {
-	creator     PublicKey
-	tokenAVault PublicKey
-	tokenBVault PublicKey
-	feeRate     uint64
+	creator      PublicKey
+	tokenAVault  PublicKey
+	tokenBVault  PublicKey
+	minLiquidity uint64
+	feeRate      uint64
 }
 
 type IxCreatePool struct {
@@ -32,6 +33,8 @@ type IxCreatePool struct {
 
 	poolInfo_data *poolData `golana:"init"`
 
+	// The minimum liquidity to deposit, liquidity  = sqrt(amountA * amountB)
+	minLiquidity uint64
 	// The fee rate, in basis points, i.e. 1000 = 10%
 	feeRate uint64
 }
@@ -58,6 +61,7 @@ func (ix *IxCreatePool) Process() {
 	data.creator = *ix.creator.Key
 	data.tokenAVault = *ix.tokenAVault.Key
 	data.tokenBVault = *ix.tokenBVault.Key
+	data.minLiquidity = ix.minLiquidity
 	data.feeRate = ix.feeRate
 	ix.poolInfo_data = data
 	// Commit the data to the account

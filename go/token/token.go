@@ -17,6 +17,18 @@ const (
 	AuthCloseAccount
 )
 
+type AccountState uint8
+
+const (
+	// Account is not yet initialized
+	AccountUninitialized AccountState = iota
+	// Account is initialized; the account owner and/or delegate may perform permitted operations
+	AccountInitialized
+	// Account has been frozen by the Mint freeze authority. Neither the account owner nor
+	// the delegate are able to perform operations
+	AccountFrozen
+)
+
 type Mint struct {
 	MintAuthority   *PublicKey
 	Supply          uint64
@@ -25,9 +37,26 @@ type Mint struct {
 	FreezeAuthority *PublicKey
 }
 
+type Account struct {
+	Mint            *PublicKey
+	Owner           *PublicKey
+	Amount          uint64
+	Delegate        *PublicKey
+	State           AccountState
+	IsNative        bool
+	NativeReserve   uint64
+	DelegatedAmount uint64
+	CloseAuthority  *PublicKey
+}
+
 func UnpackMint(account *AccountInfo) (*Mint, error) {
-	mint, err := tokenFfi.unpack_mint(account)
+	mint, err := tokenFfi.unpack_mint(account.Index)
 	return mint, NewSolanaError(err)
+}
+
+func UnpackAccount(account *AccountInfo) (*Account, error) {
+	acc, err := tokenFfi.unpack_account(account.Index)
+	return acc, NewSolanaError(err)
 }
 
 func CreateAndInitAccount(from, to, mint *AccountInfo, owner *PublicKey, signerSeeds []SeedBump) error {

@@ -1,6 +1,7 @@
 package instructions
 
 import (
+	"math2"
 	. "solana"
 	"token"
 )
@@ -28,6 +29,8 @@ type IxDeposit struct {
 	tokenProgram           *AccountInfo
 	associatedTokenProgram *AccountInfo
 
+	poolInfo_data *poolData
+
 	// The amount of token A/B to deposit
 	amountA      uint64
 	amountB      uint64
@@ -47,24 +50,49 @@ func (ix *IxDeposit) Process() {
 	))
 
 	// Calculate numbers
-	// var x uint64 = 4 * 1_000_000_000
-	// var y uint64 = 16 * 1_000_000_000
-	// fmt2.Println(math2.U64GeometryMean(x, y))
-	// fmt2.Println(math2.U64MulDiv(x, y, y*4))
+
+	var amountA, amountB, liquidity uint64
+	vaultA, err := token.UnpackAccount(ix.tokenAVault)
+	AbortOnError(err)
+	vaultB, err := token.UnpackAccount(ix.tokenBVault)
+	AbortOnError(err)
+	if vaultA.Amount == 0 && vaultB.Amount == 0 {
+		// This is the first deposit, calculate the initial liquidity
+		liquidity = math2.U64GeometryMean(ix.amountA, ix.amountB)
+		if liquidity < ix.poolInfo_data.minLiquidity {
+			panic("liquidity less than minimum")
+		}
+		amountA, amountB = ix.amountA, ix.amountB
+	} else if vaultA.Amount != 0 && vaultB.Amount != 0 {
+		// Check if amountA and amountB are balanced
+		expectedA := math2.U64MulDiv(vaultA.Amount, ix.amountB, vaultB.Amount)
+		if expectedA < ix.amountA {
+			amountA = expectedA
+			amountB = ix.amountB
+		} else if expectedA > ix.amountA {
+			amountA = ix.amountA
+			amountB = math2.U64MulDiv(vaultB.Amount, ix.amountA, vaultA.Amount)
+		} else {
+			amountA, amountB = ix.amountA, ix.amountB
+		}
+		liquidity = math2.U64GeometryMean(amountA, amountB)
+	} else {
+		panic("invalid vault amount, both should be zero or non-zero")
+	}
 
 	// Transfer token A/B to the pool
 	AbortOnError(token.Transfer(
 		ix.tokenA,
 		ix.tokenAVault,
 		ix.depositor,
-		ix.amountA,
+		amountA,
 		nil,
 	))
 	AbortOnError(token.Transfer(
 		ix.tokenB,
 		ix.tokenBVault,
 		ix.depositor,
-		ix.amountB,
+		amountB,
 		nil,
 	))
 
@@ -74,7 +102,7 @@ func (ix *IxDeposit) Process() {
 		ix.mintLiquidity,
 		ix.tokenLiquidity,
 		ix.mintLpAuth,
-		ix.amountA+ix.amountB,
+		liquidity,
 		mintAuthSeedBump,
 	))
 

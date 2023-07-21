@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use go_vm::types::*;
 use go_vm::*;
 use golana::*;
-use solana_program::{self, program_pack::Pack, pubkey::Pubkey};
+use solana_program::{self, program_option::COption, program_pack::Pack, pubkey::Pubkey};
 use spl_associated_token_account::{
     self, instruction::create_associated_token_account,
     instruction::create_associated_token_account_idempotent,
@@ -27,14 +27,47 @@ impl TokenFfi {
             let decimals = GosValue::from(mint.decimals);
             let is_initialized = GosValue::from(mint.is_initialized);
             let freeze_authority = SolanaFfi::make_pub_key_nilable_ptr(ctx, mint.freeze_authority);
-            let mint = ctx.new_struct(vec![
+            let mint = FfiCtx::new_pointer(ctx.new_struct(vec![
                 mint_authority,
                 supply,
                 decimals,
                 is_initialized,
                 freeze_authority,
-            ]);
+            ]));
             Ok(mint)
+        })();
+        SolanaFfi::unwrap_result(result)
+    }
+
+    fn ffi_unpack_account(ctx: &FfiCtx, account_index: usize) -> (GosValue, GosValue) {
+        let inst = SolanaFfi::get_instruction(ctx);
+        let account = &inst.accounts[account_index];
+        let account = spl_token::state::Account::unpack(&account.data.borrow());
+        let result: anyhow::Result<GosValue> = (move || {
+            let account = account?;
+            let mint = SolanaFfi::make_pub_key_ptr(ctx, account.mint);
+            let owner = SolanaFfi::make_pub_key_ptr(ctx, account.owner);
+            let amount = GosValue::from(account.amount);
+            let delegate = SolanaFfi::make_pub_key_nilable_ptr(ctx, account.delegate);
+            let state = GosValue::from(account.state as u8);
+            let (is_native, native_reserve) = match account.is_native {
+                COption::Some(v) => (GosValue::from(true), GosValue::from(v)),
+                COption::None => (GosValue::from(false), GosValue::from(0)),
+            };
+            let delegated_amount = GosValue::from(account.delegated_amount);
+            let close_authority = SolanaFfi::make_pub_key_nilable_ptr(ctx, account.close_authority);
+            let account = FfiCtx::new_pointer(ctx.new_struct(vec![
+                mint,
+                owner,
+                amount,
+                delegate,
+                state,
+                is_native,
+                native_reserve,
+                delegated_amount,
+                close_authority,
+            ]));
+            Ok(account)
         })();
         SolanaFfi::unwrap_result(result)
     }

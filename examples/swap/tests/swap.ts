@@ -151,7 +151,7 @@ describe("swap", async () => {
                 mintA,
                 depositorTokenAccountA.address,
                 mintAuthority.publicKey,
-                10000,
+                100000000,
                 [mintAuthority],
             );
 
@@ -161,7 +161,7 @@ describe("swap", async () => {
                 mintB,
                 depositorTokenAccountB.address,
                 mintAuthority.publicKey,
-                10000,
+                100000000,
                 [mintAuthority],
             );
 
@@ -195,7 +195,7 @@ describe("swap", async () => {
 
         it("IxCreatePool", async () => {
             await swap.methods
-                .IxCreatePool(new BN(100))
+                .IxCreatePool(new BN(10000), new BN(100))
                 .accounts({
                     creator: creator.publicKey,
                     mintA: mintA,
@@ -225,7 +225,7 @@ describe("swap", async () => {
 
         it("IxDeposit", async () => {
             await swap.methods
-                .IxDeposit(new BN(100), new BN(10), lp_token_mint_auth_bump)
+                .IxDeposit(new BN(100000), new BN(400000), lp_token_mint_auth_bump)
                 .accounts({
                     depositor: depositor.publicKey,
                     mintLiquidity: mintLP,
@@ -248,35 +248,17 @@ describe("swap", async () => {
                 .signers([depositor])
                 .rpc({ skipPreflight: true });
 
+            const _depositorA = await getAccount(provider.connection, depositorTokenAccountA.address);
+            console.log("depositorA", _depositorA.amount.toString());
+            const _depositorB = await getAccount(provider.connection, depositorTokenAccountB.address);
+            console.log("depositorB", _depositorB.amount.toString());
             const _lpAccount = await getAccount(provider.connection, depositorTokenAccountLP.address);
-            console.log(_lpAccount.amount.toString());
-        });
+            console.log("depositorLP", _lpAccount.amount.toString());
 
-        it("IxWithdraw", async () => {
-            await swap.methods
-                .IxWithdraw(new BN(1), vault_authority_bump)
-                .accounts({
-                    depositor: depositor.publicKey,
-                    mintLiquidity: mintLP,
-                    mintLpAuth: lp_token_mint_auth_pda,
-                    tokenA: depositorTokenAccountA.address,
-                    tokenB: depositorTokenAccountB.address,
-                    tokenLiquidity: depositorTokenAccountLP.address,
-                    tokenAVault: vaultA.publicKey,
-                    tokenBVault: vaultB.publicKey,
-                    vaultAuthority: vault_authority_pda,
-                    poolInfo: infoAccount.publicKey,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
-                .signers([depositor])
-                .rpc({ skipPreflight: true });
-
-            const _lpAccount = await getAccount(provider.connection, depositorTokenAccountLP.address);
-            console.log(_lpAccount.amount.toString());
+            const _vaultA = await getAccount(provider.connection, vaultA.publicKey);
+            console.log("vaultA", _vaultA.amount.toString());
+            const _vaultB = await getAccount(provider.connection, vaultB.publicKey);
+            console.log("vaultB", _vaultB.amount.toString());
         });
 
         it("IxTrade", async () => {
@@ -303,6 +285,42 @@ describe("swap", async () => {
             console.log(_traderA.amount.toString());
             const _traderB = await getAccount(provider.connection, traderTokenAccountB.address);
             console.log(_traderB.amount.toString());
+        });
+
+        it("IxWithdraw", async () => {
+            await swap.methods
+                .IxWithdraw(new BN(100000), vault_authority_bump)
+                .accounts({
+                    depositor: depositor.publicKey,
+                    mintLiquidity: mintLP,
+                    mintLpAuth: lp_token_mint_auth_pda,
+                    tokenA: depositorTokenAccountA.address,
+                    tokenB: depositorTokenAccountB.address,
+                    tokenLiquidity: depositorTokenAccountLP.address,
+                    tokenAVault: vaultA.publicKey,
+                    tokenBVault: vaultB.publicKey,
+                    vaultAuthority: vault_authority_pda,
+                    poolInfo: infoAccount.publicKey,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                ])
+                .signers([depositor])
+                .rpc({ skipPreflight: true });
+
+            const _depositorA = await getAccount(provider.connection, depositorTokenAccountA.address);
+            console.log("depositorA", _depositorA.amount.toString());
+            const _depositorB = await getAccount(provider.connection, depositorTokenAccountB.address);
+            console.log("depositorB", _depositorB.amount.toString());
+            const _lpAccount = await getAccount(provider.connection, depositorTokenAccountLP.address);
+            console.log("depositorLP", _lpAccount.amount.toString());
+
+            const _vaultA = await getAccount(provider.connection, vaultA.publicKey);
+            console.log("vaultA", _vaultA.amount.toString());
+            const _vaultB = await getAccount(provider.connection, vaultB.publicKey);
+            console.log("vaultB", _vaultB.amount.toString());
         });
 
         it("IxClosePool", async () => {

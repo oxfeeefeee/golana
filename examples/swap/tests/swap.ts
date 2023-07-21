@@ -262,8 +262,12 @@ describe("swap", async () => {
         });
 
         it("IxTrade", async () => {
+            const _traderA1 = await getAccount(provider.connection, traderTokenAccountA.address);
+            console.log("before trade, A:", _traderA1.amount.toString());
+            const _traderB1 = await getAccount(provider.connection, traderTokenAccountB.address);
+            console.log("before trade, B:", _traderB1.amount.toString());
             await swap.methods
-                .IxTrade(new BN(1), new BN(2), vault_authority_bump)
+                .IxTrade(new BN(100), new BN(200), vault_authority_bump)
                 .accounts({
                     trader: trader.publicKey,
                     tokenA: traderTokenAccountA.address,
@@ -282,9 +286,9 @@ describe("swap", async () => {
                 .rpc({ skipPreflight: true });
 
             const _traderA = await getAccount(provider.connection, traderTokenAccountA.address);
-            console.log(_traderA.amount.toString());
+            console.log("After trade, A:", _traderA.amount.toString());
             const _traderB = await getAccount(provider.connection, traderTokenAccountB.address);
-            console.log(_traderB.amount.toString());
+            console.log("After trade, B:", _traderB.amount.toString());
         });
 
         it("IxWithdraw", async () => {

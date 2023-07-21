@@ -1,6 +1,7 @@
 package instructions
 
 import (
+	"math2"
 	. "solana"
 	"token"
 )
@@ -27,6 +28,16 @@ type IxTrade struct {
 }
 
 func (ix *IxTrade) Process() {
+	vaultA, err := token.UnpackAccount(ix.tokenAVault)
+	AbortOnError(err)
+	vaultB, err := token.UnpackAccount(ix.tokenBVault)
+	AbortOnError(err)
+	liquidity := math2.U64GeometryMean(vaultA.Amount, vaultB.Amount)
+	newVaultBAmount := math2.U64MulDiv(liquidity, liquidity, vaultA.Amount+ix.amountA)
+	amountB := vaultB.Amount - newVaultBAmount
+	if amountB < ix.expectedAmountB {
+		panic("Cannot swap for the expected amount")
+	}
 
 	vaultAuthSeedBump := []SeedBump{{VAULT_AUTH_PDA_SEED, ix.vaultAuthBump}}
 	// Transfer token A to the pool
@@ -41,7 +52,7 @@ func (ix *IxTrade) Process() {
 		ix.tokenBVault,
 		ix.tokenB,
 		ix.vaultAuthority,
-		ix.amountB,
+		amountB,
 		vaultAuthSeedBump,
 	))
 }

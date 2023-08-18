@@ -1,4 +1,4 @@
-import dns from "node:dns";
+//import dns from "node:dns";
 import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
@@ -6,12 +6,13 @@ import { BinaryWriter } from 'borsh';
 import { IDL as LoaderIDL, Loader } from "./loader.js";
 import { Idl, IdlInstruction, IdlAccountItem, IdlAccounts, isIdlAccounts } from "./idl.js";
 import { AllInstructions, MethodsFn, MakeMethodsNamespace, ArgsTuple, IdlTypes } from './types.js';
+import { createHash } from "crypto";
 
-let LOADER_ID = "Not initialized!!!";
+let LOADER_ID = "Not initialized!!!!";
 
 export function initFromEnv(): anchor.AnchorProvider {
   // To support IPv4 urls
-  dns.setDefaultResultOrder("ipv4first");
+  //dns.setDefaultResultOrder("ipv4first");
 
   LOADER_ID = process.env.GOLANA_LOADER_ID as string;
 
@@ -105,20 +106,9 @@ export class Program<IDL extends Idl = Idl> {
   async findAddr(seed: string) {
     let buf: Buffer | Uint8Array;
 
-    if (typeof crypto !== "undefined") {
-      const bytecodeBuf = this._bytecodePK.toBytes();
-      const seedBuf = utils.bytes.utf8.encode(seed);
-      const fullSeed = new Uint8Array(bytecodeBuf.length + seedBuf.length);
-      fullSeed.set(bytecodeBuf);
-      fullSeed.set(seedBuf, bytecodeBuf.length);
-      const hash = await crypto.subtle.digest("SHA-256", fullSeed);
-      buf = new Uint8Array(hash);
-    } else {
-      const crypto = await import("node:crypto");
-      const fullSeed = Buffer.concat([this._bytecodePK.toBuffer(), Buffer.from(utils.bytes.utf8.encode(seed))]);
-      buf = crypto.createHash("sha256").update(fullSeed).digest();
-    }
-
+    const fullSeed = Buffer.concat([this._bytecodePK.toBuffer(), Buffer.from(utils.bytes.utf8.encode(seed))]);
+    buf = createHash("sha256").update(fullSeed).digest();
+    
     return PublicKey.findProgramAddressSync([buf], this._golanaLoader.programId);
   }
 }

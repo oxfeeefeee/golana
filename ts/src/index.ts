@@ -1,5 +1,5 @@
 //import dns from "node:dns";
-import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions } from "@solana/web3.js";
+import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 import { BinaryWriter } from 'borsh';
@@ -17,6 +17,18 @@ export function initFromEnv(): anchor.AnchorProvider {
   LOADER_ID = process.env.GOLANA_LOADER_ID as string;
 
   const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  return provider;
+}
+
+export function initProvider(
+  connection: Connection, wallet: any, /* should be anchor.Provider.Wallet */
+  golanaLoaderId: string,
+  opts: ConfirmOptions = anchor.AnchorProvider.defaultOptions()
+): anchor.AnchorProvider {
+  LOADER_ID = golanaLoaderId;
+
+  const provider = new anchor.AnchorProvider(connection, wallet, opts);
   anchor.setProvider(provider);
   return provider;
 }

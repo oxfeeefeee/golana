@@ -20,16 +20,17 @@ default = ["custom-heap"]
 
 [dependencies]
 anyhow = "1.0"
-anchor-lang = "0.25.0"
-solana-program = "1.10.41"
-borsh = "0.9.3" 
-spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
-spl-associated-token-account = {version = "1.1.1", features = ["no-entrypoint"]}
-spl-math = {version = "0.1.0", features = ["no-entrypoint"]}
+anchor-lang = "0.28.0"
+solana-program = "1.16.9"
+borsh = "0.10.3" 
+spl-token = {version = "4.0.0", features = ["no-entrypoint"]}
+spl-associated-token-account = {version = "2.0.0", features = ["no-entrypoint"]}
+spl-math = {version = "0.2.0", features = ["no-entrypoint"]}
+bytemuck = { version = "1.4.0", features = ["derive", "min_const_generics"]}
 
 [dependencies.go-vm] 
 features = ["btree_map"]
-version = "0.1.0"
+version = "0.1.2"
 # path = "../../../../goscript/vm"
 
 [dependencies.smalloc] 

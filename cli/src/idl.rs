@@ -19,7 +19,6 @@ pub fn get_idl(tx: &golana::TxMeta, metas: &MetadataObjs, proj_name: &str) -> Re
         types: vec![],
         errors: None,
         events: None,
-        state: None,
         metadata: None,
     })
 }
@@ -55,8 +54,10 @@ fn get_account_idl(acc: &golana::AccMeta) -> idl::IdlAccount {
         name: acc.name.clone(),
         is_signer: acc.is_signer,
         is_mut: acc.is_mut,
+        is_optional: None,
         docs: None,
         pda: None,
+        relations: vec![],
     }
 }
 

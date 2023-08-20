@@ -1,10 +1,11 @@
 use crate::config::*;
 use crate::util::new_vm_program;
+use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey};
 use anchor_client::Program;
 use anyhow::{anyhow, Result};
 use solana_sdk;
-use std::path::Path;
+use std::{path::Path, rc::Rc};
 
 // deploy the project
 pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> {
@@ -90,7 +91,7 @@ pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> 
 
 /// Call Clear instruction of Golana program
 fn gol_clear(
-    program: &Program,
+    program: &Program<Rc<Keypair>>,
     bytecode_pk: &Pubkey,
     mem_dump_pk: &Pubkey,
     name: String,
@@ -111,7 +112,7 @@ fn gol_clear(
 }
 
 /// Upload the bytecode to the account
-fn gol_write(program: &Program, bytecode_pk: &Pubkey, bytecode: &[u8]) -> Result<()> {
+fn gol_write(program: &Program<Rc<Keypair>>, bytecode_pk: &Pubkey, bytecode: &[u8]) -> Result<()> {
     let chunk_size = 850;
     let mut offset = 0;
     while offset < bytecode.len() {
@@ -144,7 +145,11 @@ fn gol_write(program: &Program, bytecode_pk: &Pubkey, bytecode: &[u8]) -> Result
 }
 
 /// Call Finalize instruction of Golana program
-fn gol_finalize(program: &Program, bytecode_pk: &Pubkey, mem_dump_pk: &Pubkey) -> Result<()> {
+fn gol_finalize(
+    program: &Program<Rc<Keypair>>,
+    bytecode_pk: &Pubkey,
+    mem_dump_pk: &Pubkey,
+) -> Result<()> {
     program
         .request()
         .instruction(

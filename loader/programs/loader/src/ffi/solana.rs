@@ -162,7 +162,7 @@ impl SolanaFfi {
         let ptr_obj = ptr.as_non_nil_pointer()?;
         let pk = ptr_obj.deref(&ctx.stack, &ctx.vm_objs.packages)?;
         let slice: &[u8] = &FfiCtx::array_as_primitive_slice::<u8, u8>(&pk);
-        Ok(Pubkey::new(slice))
+        Ok(Pubkey::from(<[u8; 32]>::try_from(slice).unwrap()))
     }
 
     pub(crate) fn get_signers_seed_buf(seeds: &GosValue, program_id: &Pubkey) -> Vec<u8> {

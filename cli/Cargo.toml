@@ -15,25 +15,25 @@ clap = { version = "4.0.18", features = ["derive"] }
 toml = "0.5.9"
 serde = "1.0.136"
 serde_derive = "1.0.136"
-borsh = "0.9.3" 
-anchor-client = "0.25.0"
+borsh = "0.10.3" 
+anchor-client = "0.28.0"
 shellexpand = "2.1.0"
-solana-sdk = "~1.10.29"
+solana-sdk = "1.16.9"
 dirs = "3.0"
 serde_json = "1.0"
-anchor-syn = { version = "0.25.0", features = ["idl"] }
+anchor-syn = { version = "0.28.0", features = ["idl"] }
 heck = "0.3.1"
 
 [dependencies.go-engine] 
 default-features = false
 features = ["read_fs", "read_zip", "codegen", "btree_map"]
-version = "0.1.1"
+version = "0.1.3"
 #path = "../../goscript/engine"
 
 
 [dependencies.go-vm] 
 features = ["btree_map"]
-version = "0.1.0"
+version = "0.1.2"
 #path = "../../goscript/vm"
 
 

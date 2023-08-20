@@ -14,7 +14,7 @@ mod malloc;
 #[global_allocator]
 static ALLOC: DualMalloc = DualMalloc::new();
 
-const MAX_HANDLE_LEN: usize = 30;
+const MAX_HANDLE_LEN: usize = 32;
 
 #[program]
 pub mod loader {
@@ -75,7 +75,7 @@ pub mod loader {
         let meta_ptr = Rc::into_raw(Rc::new(meta)) as u64;
         DualMalloc::set_use_smalloc(false);
 
-        bc_raw.finalized = true;
+        bc_raw.finalized = 1;
 
         // Now save the content of the memory used by smalloc.
         let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
@@ -137,9 +137,9 @@ fn initialize_impl(
 
     bytecode.handle = string_to_array(&handle)?;
     bytecode.authority = auth.key();
-    bytecode.finalized = false;
+    bytecode.finalized = 0;
     bytecode.content_size = 0;
-    bytecode.content = [0];
+    bytecode.content = [0; 8];
 
     mem_dump.bytecode = bc_pk;
     mem_dump.meta_ptr = 0;
@@ -204,10 +204,10 @@ pub struct GolExecute<'info> {
 pub struct GolBytecode {
     pub handle: [u8; MAX_HANDLE_LEN],
     pub authority: Pubkey,
-    pub finalized: bool,
+    pub finalized: usize,
     pub content_size: usize,
     // a dummy size, and transmute when using it.
-    pub content: [u8; 1],
+    pub content: [u8; 8],
 }
 
 #[account(zero_copy)]

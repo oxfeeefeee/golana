@@ -5,9 +5,9 @@ import BN from 'bn.js';
 
 describe("helloworld", async () => {
     try {
-        let provider = initFromEnv();
+        const provider = initFromEnv();
 
-        const hello = new Program<Helloworld>(IDL, await Program.createCodePubKeys("helloworld"));
+        const hello = await Program.create<Helloworld>(IDL, provider);
 
         const userAccountSpace = 512;
         const userAccount = Keypair.generate();
@@ -15,15 +15,18 @@ describe("helloworld", async () => {
 
         it("Initialize program state", async () => {
             // Airdropping tokens to a payer.
-            await provider.connection.confirmTransaction(
-                await provider.connection.requestAirdrop(payer.publicKey, 100000000),
-                "processed"
-            );
+            const latestBlockHash = await provider.connection.getLatestBlockhash();
+            const airdrop = await provider.connection.requestAirdrop(payer.publicKey, 100000000);
+            await provider.connection.confirmTransaction({
+                blockhash: latestBlockHash.blockhash,
+                lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+                signature: airdrop,
+            });
 
-            const userAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(userAccountSpace);
+           const userAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(userAccountSpace);
 
             // Create the user account
-            await provider.sendAndConfirm(
+            const trans = await provider.sendAndConfirm(
                 (() => {
                     const tx = new Transaction();
                     tx.add(
@@ -41,10 +44,12 @@ describe("helloworld", async () => {
                 { skipPreflight: true },
             );
 
+            // const result = await provider.connection.getTransaction(trans);
+            // console.log(result)
         });
 
         it("IxInit", async () => {
-            await hello.methods.IxInit(
+            const trans = await hello.methods.IxInit(
                 new BN(666),
             )
                 .accounts({
@@ -56,7 +61,10 @@ describe("helloworld", async () => {
                     ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
                 ])
                 .signers([payer])
-                .rpc({ skipPreflight: true });
+                .rpc();
+            
+            // const result = await provider.connection.getTransaction(trans);
+            // console.log(result)
         });
 
         it("IxGreet", async () => {
@@ -84,7 +92,7 @@ describe("helloworld", async () => {
                     ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
                 ])
                 .signers([payer])
-                .rpc({ skipPreflight: true });
+                .rpc();
         });
 
     } catch (e) {

@@ -6,7 +6,7 @@ out_dir = "./target"
 provider = "localnet"
 
 [providers.localnet]
-cluster = "http://localhost:8899"
+cluster = "http://127.0.0.1:8899"
 wallet = "~/.config/solana/id.json"
 loader_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
 

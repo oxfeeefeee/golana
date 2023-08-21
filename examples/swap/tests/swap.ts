@@ -9,7 +9,7 @@ describe("swap", async () => {
     try {
         let provider = initFromEnv();
 
-        const swap = new Program<Swap>(IDL, await Program.createCodePubKeys("swap"));
+        const swap =  await Program.create<Swap>(IDL, provider);
 
         const infoAccountSpace = 512;
 

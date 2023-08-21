@@ -1,5 +1,5 @@
-//import dns from "node:dns";
-import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection } from "@solana/web3.js";
+// This TS project is based on https://github.com/coral-xyz/anchor/tree/master/ts/packages/anchor/src/program
+import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 import { BinaryWriter } from 'borsh';
@@ -8,12 +8,15 @@ import { Idl, IdlInstruction, IdlAccountItem, IdlAccounts, isIdlAccounts } from 
 import { AllInstructions, MethodsFn, MakeMethodsNamespace, ArgsTuple, IdlTypes } from './types.js';
 import { createHash } from "crypto";
 
-let LOADER_ID = "Not initialized!!!!";
+let LOADER_ID = "---Not initialized!!!!---";
+
+export interface AnchorWallet {
+  publicKey: PublicKey;
+  signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T>;
+  signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]>;
+}
 
 export function initFromEnv(): anchor.AnchorProvider {
-  // To support IPv4 urls
-  //dns.setDefaultResultOrder("ipv4first");
-
   LOADER_ID = process.env.GOLANA_LOADER_ID as string;
 
   const provider = anchor.AnchorProvider.env();
@@ -22,7 +25,7 @@ export function initFromEnv(): anchor.AnchorProvider {
 }
 
 export function initProvider(
-  connection: Connection, wallet: any, /* should be anchor.Provider.Wallet */
+  connection: Connection, wallet: AnchorWallet,
   golanaLoaderId: string,
   opts: ConfirmOptions = anchor.AnchorProvider.defaultOptions()
 ): anchor.AnchorProvider {
@@ -87,15 +90,15 @@ export class Program<IDL extends Idl = Idl> {
     return this._bytecodePK;
   }
 
-  public constructor(
+  private constructor(
     private _idl: IDL,
     bytecodePKAndMemDumpPK: [PublicKey, PublicKey],
-    private _provider = getProvider(),
-    golanaLoaderId: Address = LOADER_ID,
+    private _provider: Provider,
+    golanaLoaderId: Address,
   ) {
     this._bytecodePK = bytecodePKAndMemDumpPK[0];
     this._memDumpPK = bytecodePKAndMemDumpPK[1];
-    this._golanaLoader = new AnchorProgram<Loader>(LoaderIDL, translateAddress(golanaLoaderId), _provider);
+    this._golanaLoader = new AnchorProgram<Loader>(LoaderIDL, address2Pubkey(golanaLoaderId), _provider);
 
     this.methods = Object.fromEntries(
       _idl.instructions.map(idlIx => [
@@ -109,9 +112,18 @@ export class Program<IDL extends Idl = Idl> {
     ) as unknown as MethodsNamespace<IDL>;
   }
 
+  static async create<IDL extends Idl>(
+    idl: IDL,
+    provider = getProvider(),
+    golanaLoaderId: Address = LOADER_ID,
+  ): Promise<Program<IDL>> {
+    const program_pubkeys = await Program.createCodePubKeys(idl.name);
+    return new Program<IDL>(idl, program_pubkeys, provider, golanaLoaderId);
+  }
+  
   static async createCodePubKeys(name: string, provider = getProvider(), golanaLoaderId: Address = LOADER_ID): Promise<[PublicKey, PublicKey]> {
     let pk = provider.publicKey as PublicKey;
-    let addr = translateAddress(golanaLoaderId);
+    let addr = address2Pubkey(golanaLoaderId);
     return [await PublicKey.createWithSeed(pk, "BC" + name, addr), await PublicKey.createWithSeed(pk, "MM" + name, addr)];
   }
 
@@ -275,29 +287,8 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
   }
 }
 
-// Translates an address to a Pubkey.
-export function translateAddress(address: Address): PublicKey {
+// Convert an address to a Pubkey.
+export function address2Pubkey(address: Address): PublicKey {
   return address instanceof PublicKey ? address : new PublicKey(address);
 }
 
-
-// export async function exec(
-//   golanaProgram: AnchorProgram<Loader>,
-//   bytecodePK: PublicKey,
-//   ixName: string,
-//   accounts: AccountMeta[],
-//   args: Uint8Array | Buffer,
-//   signers: Signer[]
-// ) {
-//   await golanaProgram.methods.golExecute(ixName, <Buffer>args)
-//     .accounts({ bytecode: bytecodePK })
-//     .remainingAccounts(accounts)
-//     .preInstructions([
-//         ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-//         ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
-//     ])
-//     .signers(signers)
-//     .rpc({ skipPreflight: true });
-
-//   return golanaProgram.account.golBytecode.fetch(bytecodePK);
-// }

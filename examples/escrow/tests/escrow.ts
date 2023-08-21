@@ -10,9 +10,9 @@ dns.setDefaultResultOrder("ipv4first");
 
 describe("escrow", async () => {
   try {
-    let provider = initFromEnv();
+    const provider = initFromEnv();
 
-    const escrow = await Program.create<Escrow>(IDL, provider);
+    const escrow = await Program.create<Escrow>(IDL, provider.publicKey);
 
     const takerAmount = 1001;
     const initializerAmount = 502;

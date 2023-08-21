@@ -1,6 +1,6 @@
 {
   "name": "golana",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Golana client side library",
   "type": "module",
   "main": "dist/index.js",

@@ -7,9 +7,9 @@ import { assert } from "chai";
 
 describe("swap", async () => {
     try {
-        let provider = initFromEnv();
+        const provider = initFromEnv();
 
-        const swap =  await Program.create<Swap>(IDL, provider);
+        const swap =  await Program.create<Swap>(IDL, provider.publicKey);
 
         const infoAccountSpace = 512;
 

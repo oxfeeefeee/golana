@@ -114,15 +114,15 @@ export class Program<IDL extends Idl = Idl> {
 
   static async create<IDL extends Idl>(
     idl: IDL,
-    provider = getProvider(),
+    programAuth: Address,
     golanaLoaderId: Address = LOADER_ID,
   ): Promise<Program<IDL>> {
-    const program_pubkeys = await Program.createCodePubKeys(idl.name);
-    return new Program<IDL>(idl, program_pubkeys, provider, golanaLoaderId);
+    const program_pubkeys = await Program.createCodePubKeys(idl.name, programAuth);
+    return new Program<IDL>(idl, program_pubkeys, getProvider(), golanaLoaderId);
   }
   
-  static async createCodePubKeys(name: string, provider = getProvider(), golanaLoaderId: Address = LOADER_ID): Promise<[PublicKey, PublicKey]> {
-    let pk = provider.publicKey as PublicKey;
+  static async createCodePubKeys(name: string, programAuth: Address, golanaLoaderId: Address = LOADER_ID): Promise<[PublicKey, PublicKey]> {
+    let pk = address2Pubkey(programAuth);
     let addr = address2Pubkey(golanaLoaderId);
     return [await PublicKey.createWithSeed(pk, "BC" + name, addr), await PublicKey.createWithSeed(pk, "MM" + name, addr)];
   }

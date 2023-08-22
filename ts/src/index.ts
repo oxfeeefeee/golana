@@ -1,6 +1,6 @@
 // This TS project is based on https://github.com/coral-xyz/anchor/tree/master/ts/packages/anchor/src/program
 import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
-import { Program as AnchorProgram, Provider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
+import { Program as AnchorProgram, Provider, AnchorProvider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 import { BinaryWriter } from 'borsh';
 import { IDL as LoaderIDL, Loader } from "./loader.js";
@@ -10,13 +10,16 @@ import { createHash } from "crypto";
 
 let LOADER_ID = "---Not initialized!!!!---";
 
+// re-export AnchorProvider
+export { AnchorProvider };
+
 export interface AnchorWallet {
   publicKey: PublicKey;
   signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T>;
   signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]>;
 }
 
-export function initFromEnv(): anchor.AnchorProvider {
+export function initFromEnv(): AnchorProvider {
   LOADER_ID = process.env.GOLANA_LOADER_ID as string;
 
   const provider = anchor.AnchorProvider.env();
@@ -28,7 +31,7 @@ export function initProvider(
   connection: Connection, wallet: AnchorWallet,
   golanaLoaderId: string,
   opts: ConfirmOptions = anchor.AnchorProvider.defaultOptions()
-): anchor.AnchorProvider {
+): AnchorProvider {
   LOADER_ID = golanaLoaderId;
 
   const provider = new anchor.AnchorProvider(connection, wallet, opts);

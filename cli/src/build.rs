@@ -15,8 +15,8 @@ pub fn build(out_name: Option<&str>, out_dir: &Path, proj_name: &str) -> Result<
         PathBuf::from("./"),
     );
     let engine = gos::Engine::new();
-    let (bc, _) = engine
-        .compile(false, false, &reader, Path::new("./main.go"))
+    let bc = engine
+        .compile(&reader, Path::new("./main.go"), false, false, false)
         .map_err(|el| {
             el.sort();
             anyhow!(el.to_string())

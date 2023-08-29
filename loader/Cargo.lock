@@ -951,15 +951,14 @@ dependencies = [
 
 [[package]]
 name = "go-parser"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4abf0f576e12323956aa325677645962ba4e94be60bdcd8e0995f8ad65676ca0"
+version = "0.1.1"
+dependencies = [
+ "borsh 0.10.3",
+]
 
 [[package]]
 name = "go-pmacro"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ece6d5ed3cc0d93f6fbab739e85a39fb51d872ff7a3fe4e52cd4b0627354ce0b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -968,9 +967,7 @@ dependencies = [
 
 [[package]]
 name = "go-vm"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e526eef085f5da380ea054af1a0d0ec2af52c2fedc005a5bec69682cfe59c5c4"
+version = "0.1.3"
 dependencies = [
  "borsh 0.10.3",
  "go-parser",
@@ -980,7 +977,7 @@ dependencies = [
 
 [[package]]
 name = "golana"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.3",
@@ -990,7 +987,7 @@ dependencies = [
 
 [[package]]
 name = "golana-loader"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anchor-lang",
  "anyhow",

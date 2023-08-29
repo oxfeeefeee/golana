@@ -39,6 +39,7 @@ pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> 
             &bytecode_pk,
             &mem_dump_pk,
             config.project.name.clone(),
+            bc_space,
         )?;
     } else {
         // create new accounts
@@ -95,6 +96,7 @@ fn gol_clear(
     bytecode_pk: &Pubkey,
     mem_dump_pk: &Pubkey,
     name: String,
+    new_size: u64,
 ) -> Result<()> {
     program
         .request()
@@ -105,8 +107,12 @@ fn gol_clear(
             authority: program.payer(),
             bytecode: bytecode_pk.to_owned(),
             mem_dump: mem_dump_pk.to_owned(),
+            system_program: solana_sdk::system_program::id(),
         })
-        .args(golana_loader::instruction::GolClear { handle: name })
+        .args(golana_loader::instruction::GolClear {
+            handle: name,
+            new_size,
+        })
         .send()?;
     Ok(())
 }
@@ -124,11 +130,6 @@ fn gol_write(program: &Program<Rc<Keypair>>, bytecode_pk: &Pubkey, bytecode: &[u
             .instruction(
                 solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(
                     256 * 1024,
-                ),
-            )
-            .instruction(
-                solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(
-                    1400000,
                 ),
             )
             .accounts(golana_loader::accounts::GolWrite {

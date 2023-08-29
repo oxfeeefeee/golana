@@ -8,12 +8,12 @@ provider = "localnet"
 [providers.localnet]
 cluster = "http://127.0.0.1:8899"
 wallet = "~/.config/solana/id.json"
-loader_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
+loader_id = "HE7R2wfjpgjHnxfA9bS6fSLJzm7nucFfBXQhhxTCWMZs"
 
 [providers.testnet]
 cluster = "https://api.testnet.solana.com"
 wallet = "~/.config/solana/id.json"
-loader_id = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
+loader_id = "HE7R2wfjpgjHnxfA9bS6fSLJzm7nucFfBXQhhxTCWMZs"
 
 [test]
 script = "npx mocha -t 1000000 tests/**/*.ts"

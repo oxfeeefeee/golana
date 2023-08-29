@@ -4,7 +4,7 @@ use golana::*;
 use malloc::DualMalloc;
 use std::rc::Rc;
 
-declare_id!("6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP");
+declare_id!("HE7R2wfjpgjHnxfA9bS6fSLJzm7nucFfBXQhhxTCWMZs");
 
 mod ffi;
 mod goscript;
@@ -35,8 +35,31 @@ pub mod loader {
         )
     }
 
-    pub fn gol_clear(ctx: Context<GolClear>, handle: String) -> Result<()> {
+    pub fn gol_clear(ctx: Context<GolClear>, handle: String, new_size: u64) -> Result<()> {
         DualMalloc::set_use_smalloc(true);
+
+        // Realloc if the new size is larger than the current size.
+        let size = new_size as usize;
+        let bc_account: &AccountInfo = ctx.accounts.bytecode.as_ref();
+        if bc_account.data_len() < size {
+            let rent = Rent::get()?;
+            let new_minimum_balance = rent.minimum_balance(size);
+            let lamports_diff = new_minimum_balance.saturating_sub(bc_account.lamports());
+            let funding_account: &AccountInfo = ctx.accounts.authority.as_ref();
+            solana_program::program::invoke(
+                &solana_program::system_instruction::transfer(
+                    funding_account.key,
+                    bc_account.key,
+                    lamports_diff,
+                ),
+                &[
+                    funding_account.clone(),
+                    bc_account.clone(),
+                    ctx.accounts.system_program.clone(),
+                ],
+            )?;
+            bc_account.realloc(size, false)?;
+        }
 
         let bytecode = &mut ctx.accounts.bytecode.load_mut()?;
         let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
@@ -168,13 +191,15 @@ pub struct GolInitialize<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(handle: String)]
+#[instruction(handle: String, new_size: u64)]
 pub struct GolClear<'info> {
     pub authority: Signer<'info>,
     #[account(mut)]
     pub bytecode: AccountLoader<'info, GolBytecode>,
     #[account(mut)]
     pub mem_dump: AccountLoader<'info, GolMemoryDump>,
+    /// CHECK: system_program is required to transfer lamports to the bytecode account.
+    pub system_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]

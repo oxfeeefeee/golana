@@ -22,8 +22,14 @@ pub fn run(
     math2::Math2Ffi::register(&mut ffi);
     solana::SolanaFfi::register(&mut ffi);
     token::TokenFfi::register(&mut ffi);
-    go_vm::run(&bc, &ffi, None);
 
+    let panic_info = go_vm::run(&bc, &ffi);
+    if let Some(pi) = panic_info {
+        let call_stack = go_vm::CallStackDisplay::new(&pi, bc);
+        msg!("GolanaVM panic: {}\n", pi.msg);
+        msg!("Call stack:\n{}", call_stack);
+        panic!("panic from go");
+    }
     Ok(())
 }
 

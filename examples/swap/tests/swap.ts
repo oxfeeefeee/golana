@@ -1,7 +1,7 @@
 import { IDL, Swap } from '../target/swap_idl.js';
 import { Program, initFromEnv } from "golana";
 import { ComputeBudgetProgram, Keypair, SystemProgram, Transaction, PublicKey, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, createMint, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";
 
@@ -60,21 +60,10 @@ describe("swap", async () => {
 
             const infoAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(infoAccountSpace);
 
-            // Fund Main Accounts
             await provider.sendAndConfirm(
                 (() => {
                     const tx = new Transaction();
                     tx.add(
-                        // SystemProgram.transfer({
-                        //     fromPubkey: creator.publicKey,
-                        //     toPubkey: initializerMainAccount.publicKey,
-                        //     lamports: 100000000,
-                        // }),
-                        // SystemProgram.transfer({
-                        //     fromPubkey: creator.publicKey,
-                        //     toPubkey: takerMainAccount.publicKey,
-                        //     lamports: 100000000,
-                        // }),
                         SystemProgram.createAccount({
                             fromPubkey: creator.publicKey,
                             newAccountPubkey: infoAccount.publicKey,

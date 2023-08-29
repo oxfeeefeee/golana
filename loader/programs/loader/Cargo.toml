@@ -1,6 +1,6 @@
 [package]
 name = "golana-loader"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/oxfeeefeee/golana/"
@@ -29,14 +29,14 @@ spl-math = {version = "0.2.0", features = ["no-entrypoint"]}
 bytemuck = { version = "1.4.0", features = ["derive", "min_const_generics"]}
 
 [dependencies.go-vm] 
-features = ["btree_map"]
-version = "0.1.2"
-# path = "../../../../goscript/vm"
+features = ["btree_map", "serde_borsh", "instruction_pos"]
+version = "0.1.3"
+path = "../../../../goscript/vm"
 
 [dependencies.smalloc] 
 version = "0.1.2"
 # path = "../../../../smalloc"
 
 [dependencies.golana]
-version = "0.1.0"
+version = "0.1.1"
 path = "../../../golana"

@@ -59,6 +59,8 @@ func (ix *IxGreet) Process() {
 	ix.userAccount_data.greetCount++
 	CommitData(ix.userAccount)
 
+	//AbortOnError(errors.New("AbortOnError test"))
+
 }
 
 // This is the entry point of the program

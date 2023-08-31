@@ -14,7 +14,7 @@ pub fn run(
     id: &str,
     args: Vec<u8>,
 ) -> Result<()> {
-    let ix = Instruction::new(key, &metas, accounts, id, &args)?;
+    let ix = Instruction::new(key, &metas.iface_meta, &metas, accounts, id, &args)?;
     let p = std::ptr::addr_of!(ix) as usize;
 
     let mut ffi = go_vm::FfiFactory::with_user_data(p);
@@ -37,6 +37,7 @@ pub(crate) struct Instruction<'a, 'info> {
     pub gos_program_id: &'a Pubkey,
     pub accounts: &'a [AccountInfo<'info>],
     pub args: &'a Vec<u8>,
+    pub iface_meta: &'a types::Meta,
     pub ix_meta: &'a IxMeta,
     pub gos_ix: RefCell<Option<GosValue>>,
 }
@@ -47,6 +48,7 @@ where
 {
     fn new(
         gos_program_id: &'a Pubkey,
+        iface_meta: &'a types::Meta,
         tx_meta: &'a TxMeta,
         accounts: &'a [AccountInfo<'info>],
         id: &'a str,
@@ -65,6 +67,7 @@ where
             gos_program_id,
             accounts,
             args,
+            iface_meta,
             ix_meta,
             gos_ix: RefCell::new(None),
         })
@@ -150,18 +153,10 @@ where
             )?);
         }
 
-        Ok(Self::make_interface(ctx.new_struct(fields), self.ix_meta))
-    }
-
-    fn make_interface(ix: GosValue, ix_meta: &IxMeta) -> GosValue {
-        let binding = vec![types::Binding4Runtime::Struct(
-            ix_meta.process_method,
-            true,
-            None,
-        )];
-        FfiCtx::new_interface(
+        let ix = ctx.new_struct(fields);
+        Ok(ctx.new_interface(
             FfiCtx::new_pointer(ix),
-            Some((ix_meta.gos_meta.ptr_to(), binding)),
-        )
+            Some((self.iface_meta, self.ix_meta.gos_meta.ptr_to())),
+        ))
     }
 }

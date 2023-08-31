@@ -16,9 +16,39 @@ static ALLOC: DualMalloc = DualMalloc::new();
 
 const MAX_HANDLE_LEN: usize = 32;
 
+#[derive(PartialEq)]
+enum FinalizeStep {
+    Init,
+    DeserialMetas,
+    DeserialFuncs,
+    DeserialPkgs,
+    DeserialMisc,
+    DeserialFileSet,
+    Check,
+}
+
+impl From<usize> for FinalizeStep {
+    fn from(i: usize) -> Self {
+        match i {
+            0 => Self::Init,
+            1 => Self::DeserialMetas,
+            2 => Self::DeserialFuncs,
+            3 => Self::DeserialPkgs,
+            4 => Self::DeserialMisc,
+            5 => Self::DeserialFileSet,
+            6 => Self::Check,
+            _ => panic!("Invalid finalize step"),
+        }
+    }
+}
+
 #[program]
 pub mod loader {
     use super::*;
+    use go_vm::types::{
+        Binding4Runtime, FunctionKey, FunctionObjs, GosValue, Meta, MetadataObjs, OpIndex,
+        PackageKey, PackageObjs,
+    };
 
     pub fn gol_initialize(ctx: Context<GolInitialize>, handle: String) -> Result<()> {
         DualMalloc::set_use_smalloc(true);
@@ -87,50 +117,87 @@ pub mod loader {
         Ok(())
     }
 
-    pub fn gol_finalize(ctx: Context<GolFinalize>) -> Result<()> {
+    pub fn gol_finalize(ctx: Context<GolFinalize>, step_num: usize) -> Result<()> {
+        let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
+        let step: FinalizeStep = step_num.into();
+        if step == FinalizeStep::Init {
+            mem_dump.data_offset = 0;
+        } else {
+            if mem_dump.finished_steps + 1 != step_num {
+                return Err(GolError::WrongFinalizeStep.into());
+            }
+            restore_memory(mem_dump)?;
+        }
+
         DualMalloc::set_use_smalloc(true);
-        let bc_raw = &mut ctx.accounts.bytecode.load_mut()?;
-        let addr = &bc_raw.content as *const [u8] as *const u8;
-        let content = unsafe { std::slice::from_raw_parts(addr, bc_raw.content_size) };
-        let bc = Bytecode::try_from_slice(content).unwrap();
-        let meta = golana::check(&bc)?;
-        let bc_ptr = Rc::into_raw(Rc::new(bc)) as u64;
-        let meta_ptr = Rc::into_raw(Rc::new(meta)) as u64;
+        let bc_data = bytecode_data(&ctx.accounts.bytecode)?;
+        let mut bytes = &bc_data[mem_dump.data_offset..];
+        match step {
+            FinalizeStep::Init => {
+                mem_dump.bc_ptr = 0;
+                mem_dump.meta_ptr = 0;
+            }
+            FinalizeStep::DeserialMetas => {
+                let metas = MetadataObjs::deserialize(&mut bytes)?;
+                mem_dump.meta_objs_ptr = obj_to_ptr(metas);
+            }
+            FinalizeStep::DeserialFuncs => {
+                let funcs = FunctionObjs::deserialize(&mut bytes)?;
+                mem_dump.func_objs_ptr = obj_to_ptr(funcs);
+            }
+            FinalizeStep::DeserialPkgs => {
+                let pkgs = PackageObjs::deserialize(&mut bytes)?;
+                mem_dump.pkg_objs_ptr = obj_to_ptr(pkgs);
+            }
+            FinalizeStep::DeserialMisc => {
+                let consts = Vec::<GosValue>::deserialize(&mut bytes)?;
+                mem_dump.consts_ptr = obj_to_ptr(consts);
+                let ifaces = Vec::<(Meta, Vec<Binding4Runtime>)>::deserialize(&mut bytes)?;
+                mem_dump.ifaces_ptr = obj_to_ptr(ifaces);
+                let indices = Vec::<Vec<OpIndex>>::deserialize(&mut bytes)?;
+                mem_dump.indices_ptr = obj_to_ptr(indices);
+                mem_dump.entry = usize::deserialize(&mut bytes)?;
+                mem_dump.main_pkg = usize::deserialize(&mut bytes)?;
+            }
+            FinalizeStep::DeserialFileSet => {
+                let metas: MetadataObjs = obj_from_ptr(mem_dump.meta_objs_ptr);
+                let funcs: FunctionObjs = obj_from_ptr(mem_dump.func_objs_ptr);
+                let pkgs: PackageObjs = obj_from_ptr(mem_dump.pkg_objs_ptr);
+                let consts: Vec<GosValue> = obj_from_ptr(mem_dump.consts_ptr);
+                let ifaces: Vec<(Meta, Vec<Binding4Runtime>)> = obj_from_ptr(mem_dump.ifaces_ptr);
+                let indices: Vec<Vec<OpIndex>> = obj_from_ptr(mem_dump.indices_ptr);
+                let entry: FunctionKey = mem_dump.entry.into();
+                let main_pkg: PackageKey = mem_dump.main_pkg.into();
+                let file_set = Option::<go_vm::parser::FileSet>::deserialize(&mut bytes)?;
+
+                let bc = Bytecode::with_components(
+                    metas, funcs, pkgs, consts, ifaces, indices, entry, main_pkg, file_set,
+                );
+                mem_dump.bc_ptr = obj_to_ptr(bc);
+            }
+            FinalizeStep::Check => {
+                let bc: Bytecode = obj_from_ptr(mem_dump.bc_ptr);
+                let meta = golana::check(&bc)?;
+                mem_dump.bc_ptr = obj_to_ptr(bc);
+                mem_dump.meta_ptr = obj_to_ptr(meta);
+            }
+        }
+        mem_dump.data_offset = bc_data.len() - bytes.len();
         DualMalloc::set_use_smalloc(false);
 
-        bc_raw.finalized = 1;
-
-        // Now save the content of the memory used by smalloc.
-        let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
-        let dump_ptr = &mut mem_dump.dump as *mut [u8] as *mut u8;
-        let dump = unsafe { std::slice::from_raw_parts_mut(dump_ptr, DualMalloc::smalloc_size()) };
-        dump.copy_from_slice(DualMalloc::smalloc_mem_as_slice());
-        mem_dump.bc_ptr = bc_ptr;
-        mem_dump.meta_ptr = meta_ptr;
-
+        mem_dump.finished_steps = step_num;
+        dump_memory(mem_dump)?;
         Ok(())
     }
 
     pub fn gol_execute(ctx: Context<GolExecute>, id: String, args: Vec<u8>) -> Result<()> {
         msg!(&id);
         let mem_dump = &mut ctx.accounts.mem_dump.load()?;
-        // Load the content of the memory stored by gol_finalize.
-        // Now bytecode is ready to use without deserialization!
-        let dump_ptr = &mem_dump.dump as *const [u8] as *const u8;
-        let dump = unsafe { std::slice::from_raw_parts(dump_ptr, DualMalloc::smalloc_size()) };
-        DualMalloc::smalloc_mem_as_slice().copy_from_slice(&dump[..]);
+        restore_memory(mem_dump)?;
 
         DualMalloc::set_use_smalloc(true);
-        let bc = match Rc::try_unwrap(unsafe { Rc::from_raw(mem_dump.bc_ptr as *const Bytecode) }) {
-            Ok(bc) => bc,
-            Err(_) => panic!("Failed to convert ptr into a Bytecode"),
-        };
-        let meta = match Rc::try_unwrap(unsafe {
-            Rc::from_raw(mem_dump.meta_ptr as *const golana::TxMeta)
-        }) {
-            Ok(meta) => meta,
-            Err(_) => panic!("Failed to convert ptr into a TxMeta"),
-        };
+        let bc: Bytecode = obj_from_ptr(mem_dump.bc_ptr);
+        let meta: TxMeta = obj_from_ptr(mem_dump.meta_ptr);
         crate::goscript::run(
             &mem_dump.bytecode,
             &bc,
@@ -140,6 +207,37 @@ pub mod loader {
             args,
         )
     }
+}
+
+fn bytecode_data<'a>(account: &'a AccountLoader<'_, GolBytecode>) -> Result<&'a [u8]> {
+    let bc_serialized = &mut account.load_mut()?;
+    let addr = &bc_serialized.content as *const [u8] as *const u8;
+    Ok(unsafe { std::slice::from_raw_parts(addr, bc_serialized.content_size) })
+}
+
+fn obj_to_ptr<T>(obj: T) -> usize {
+    Rc::into_raw(Rc::new(obj)) as usize
+}
+
+fn obj_from_ptr<T>(ptr: usize) -> T {
+    match Rc::try_unwrap(unsafe { Rc::from_raw(ptr as *const T) }) {
+        Ok(obj) => obj,
+        Err(_) => panic!("Failed to convert ptr into an object: {}", ptr),
+    }
+}
+
+fn dump_memory(mem_dump: &mut GolMemoryDump) -> Result<()> {
+    let dump_ptr = &mut mem_dump.dump as *mut [u8] as *mut u8;
+    let dump = unsafe { std::slice::from_raw_parts_mut(dump_ptr, DualMalloc::smalloc_size()) };
+    dump.copy_from_slice(DualMalloc::smalloc_mem_as_slice());
+    Ok(())
+}
+
+fn restore_memory(mem_dump: &GolMemoryDump) -> Result<()> {
+    let dump_ptr = &mem_dump.dump as *const [u8] as *const u8;
+    let dump = unsafe { std::slice::from_raw_parts(dump_ptr, DualMalloc::smalloc_size()) };
+    DualMalloc::smalloc_mem_as_slice().copy_from_slice(&dump[..]);
+    Ok(())
 }
 
 fn initialize_impl(
@@ -211,6 +309,7 @@ pub struct GolWrite<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(step: usize)]
 pub struct GolFinalize<'info> {
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority)]
@@ -238,8 +337,20 @@ pub struct GolBytecode {
 #[account(zero_copy)]
 pub struct GolMemoryDump {
     pub bytecode: Pubkey,
-    pub meta_ptr: u64,
-    pub bc_ptr: u64,
+    pub meta_ptr: usize,
+    pub bc_ptr: usize,
+    // Below are temporary fields for deserializing the bytecode.
+    pub finished_steps: usize,
+    pub data_offset: usize,
+    pub meta_objs_ptr: usize,
+    pub func_objs_ptr: usize,
+    pub pkg_objs_ptr: usize,
+    pub consts_ptr: usize,
+    pub ifaces_ptr: usize,
+    pub indices_ptr: usize,
+    pub entry: usize,
+    pub main_pkg: usize,
+
     // Anchor doesn't support this: pub dump: [u8; DualMalloc::smalloc_size()],
     // so we just use a dummy value, and transmute when using it.
     pub dump: [u8; 256],

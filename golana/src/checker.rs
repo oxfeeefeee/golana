@@ -178,22 +178,31 @@ impl IxMeta {
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct TxMeta {
+    pub iface_meta: types::Meta,
     pub instructions: Vec<IxMeta>,
 }
 
 pub fn check(bc: &Bytecode) -> Result<TxMeta> {
     let account_info_meta = get_account_info_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
 
+    let mut iface_meta = None;
     let mut ix_details = Vec::new();
     for pkg in bc.objects.packages.iter() {
         if pkg.name() == "solana" {
-            continue;
-        }
-        for (name, index) in pkg.member_indices() {
-            if name.starts_with("Ix") && pkg.member(*index).typ() == types::ValueType::Metadata {
-                let member = pkg.member(*index);
-                let gmeta = member.as_metadata();
-                ix_details.push((name, gmeta.clone()));
+            // Find the interface metadata in solana package
+            for (name, index) in pkg.member_indices() {
+                if name == "Ix" && pkg.member(*index).typ() == types::ValueType::Metadata {
+                    iface_meta = Some(pkg.member(*index).as_metadata().clone());
+                }
+            }
+        } else {
+            for (name, index) in pkg.member_indices() {
+                if name.starts_with("Ix") && pkg.member(*index).typ() == types::ValueType::Metadata
+                {
+                    let member = pkg.member(*index);
+                    let gmeta = member.as_metadata();
+                    ix_details.push((name, gmeta.clone()));
+                }
             }
         }
     }
@@ -202,7 +211,10 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
         .into_iter()
         .map(|(name, meta)| IxMeta::new(name, meta, &account_info_meta, &bc.objects.metas))
         .collect::<Result<Vec<IxMeta>>>()?;
-    Ok(TxMeta { instructions })
+    Ok(TxMeta {
+        iface_meta: iface_meta.unwrap(),
+        instructions,
+    })
 }
 
 fn get_account_info_meta(bc: &Bytecode) -> Option<types::Meta> {

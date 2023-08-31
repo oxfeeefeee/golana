@@ -151,20 +151,26 @@ fn gol_finalize(
     bytecode_pk: &Pubkey,
     mem_dump_pk: &Pubkey,
 ) -> Result<()> {
-    program
-        .request()
-        .instruction(
-            solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(256 * 1024),
-        )
-        .instruction(
-            solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(1400000),
-        )
-        .accounts(golana_loader::accounts::GolFinalize {
-            authority: program.payer(),
-            bytecode: bytecode_pk.to_owned(),
-            mem_dump: mem_dump_pk.to_owned(),
-        })
-        .args(golana_loader::instruction::GolFinalize {})
-        .send()?;
+    for i in 0..7 {
+        program
+            .request()
+            .instruction(
+                solana_sdk::compute_budget::ComputeBudgetInstruction::request_heap_frame(
+                    256 * 1024,
+                ),
+            )
+            .instruction(
+                solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(
+                    1400000,
+                ),
+            )
+            .accounts(golana_loader::accounts::GolFinalize {
+                authority: program.payer(),
+                bytecode: bytecode_pk.to_owned(),
+                mem_dump: mem_dump_pk.to_owned(),
+            })
+            .args(golana_loader::instruction::GolFinalize { step_num: i })
+            .send()?;
+    }
     Ok(())
 }

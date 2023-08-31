@@ -28,6 +28,8 @@ pub enum GolError {
     BadDataDeclareTag,
     #[msg("This argument type is not supported")]
     WrongArgType,
+    #[msg("Unexpected finalize step")]
+    WrongFinalizeStep,
     #[msg("No instruction found with provided ID")]
     RtCheckBadIxId,
     #[msg("Unexpected account count provided")]

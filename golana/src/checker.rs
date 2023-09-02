@@ -75,7 +75,6 @@ impl IxMeta {
                 }
                 accounts.push((
                     AccMeta {
-                        // todo: proper parsing
                         name: name.to_owned(),
                         is_signer,
                         is_mut,

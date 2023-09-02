@@ -9,7 +9,7 @@
         "@solana/spl-token": "^0.3.5",
         "@solana/web3.js": "^1.78.4",
         "bn.js": "^5.2.1",
-        "golana": "^0.2.8"
+        "golana": "^0.2.10"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.1",

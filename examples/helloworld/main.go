@@ -46,14 +46,15 @@ type IxGreet struct {
 
 	userAccount_data *UserData `golana:"mut"`
 
-	name string
+	names     []string
+	arrayTest [3]int64
 }
 
 func (ix *IxGreet) Process() {
 	// Check that the user is the auth of the userAccount
 	assert(*ix.user.Key == ix.userAccount_data.auth)
 
-	fmt2.Println("Hello", ix.name, "you have been greeted", ix.userAccount_data.greetCount, "times")
+	fmt2.Println("Hello", ix.names, "you have been greeted", ix.userAccount_data.greetCount, "times", "arrayTest", ix.arrayTest)
 
 	// Increment the greetCount
 	ix.userAccount_data.greetCount++

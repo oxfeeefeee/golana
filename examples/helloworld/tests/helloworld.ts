@@ -68,7 +68,7 @@ describe("helloworld", async () => {
         });
 
         it("IxGreet", async () => {
-            await hello.methods.IxGreet("best_chain_devs")
+            await hello.methods.IxGreet(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"], [new BN(666),new BN(666),new BN(666)])
                 .accounts({
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,
@@ -82,7 +82,7 @@ describe("helloworld", async () => {
         });
 
         it("IxGreet2", async () => {
-            await hello.methods.IxGreet("best_chain_devs")
+            await hello.methods.IxGreet(["best_chain_dev1", "best_chain_dev2"], [new BN(-666),new BN(-666),new BN(-666)])
                 .accounts({
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,

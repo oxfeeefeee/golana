@@ -1,7 +1,4 @@
 // This TS project is based on https://github.com/coral-xyz/anchor/tree/master/ts/packages/anchor/src/program
-import { Buffer } from "buffer";
-import { PublicKey } from "@solana/web3.js";
-import * as borsh from "@coral-xyz/borsh";
 
 export type Idl = {
   version: string;
@@ -13,10 +10,8 @@ export type Idl = {
   events?: IdlEvent[];
   errors?: IdlErrorCode[];
   constants?: IdlConstant[];
-  metadata?: IdlMetadata;
 };
 
-export type IdlMetadata = any;
 
 export type IdlConstant = {
   name: string;
@@ -59,16 +54,7 @@ export type IdlAccount = {
   isSigner: boolean;
   isOptional?: boolean;
   docs?: string[];
-  relations?: string[];
-  pda?: IdlPda;
 };
-
-export type IdlPda = {
-  seeds: IdlSeed[];
-  programId?: IdlSeed;
-};
-
-export type IdlSeed = any; // TODO
 
 // A nested/recursive version of IdlAccount.
 export type IdlAccounts = {
@@ -121,16 +107,16 @@ export type IdlType =
   | "u64"
   | "i64"
   | "f64"
-  | "u128"
-  | "i128"
-  | "u256"
-  | "i256"
-  | "bytes"
+  // | "u128"
+  // | "i128"
+  // | "u256"
+  // | "i256"
+  // | "bytes"
   | "string"
-  | "publicKey"
-  | IdlTypeDefined
-  | IdlTypeOption
-  | IdlTypeCOption
+  // | "publicKey"
+  // | IdlTypeDefined
+  // | IdlTypeOption
+  // | IdlTypeCOption
   | IdlTypeVec
   | IdlTypeArray;
 
@@ -171,35 +157,3 @@ export type IdlErrorCode = {
   name: string;
   msg?: string;
 };
-
-// Deterministic IDL address as a function of the program id.
-export async function idlAddress(programId: PublicKey): Promise<PublicKey> {
-  const base = (await PublicKey.findProgramAddress([], programId))[0];
-  return await PublicKey.createWithSeed(base, seed(), programId);
-}
-
-// Seed for generating the idlAddress.
-export function seed(): string {
-  return "anchor:idl";
-}
-
-// The on-chain account of the IDL.
-export interface IdlProgramAccount {
-  authority: PublicKey;
-  data: Buffer;
-}
-
-const IDL_ACCOUNT_LAYOUT: borsh.Layout<IdlProgramAccount> = borsh.struct([
-  borsh.publicKey("authority"),
-  borsh.vecU8("data"),
-]);
-
-export function decodeIdlAccount(data: Buffer): IdlProgramAccount {
-  return IDL_ACCOUNT_LAYOUT.decode(data);
-}
-
-export function encodeIdlAccount(acc: IdlProgramAccount): Buffer {
-  const buffer = Buffer.alloc(1000); // TODO: use a tighter buffer.
-  const len = IDL_ACCOUNT_LAYOUT.encode(acc, buffer);
-  return buffer.slice(0, len);
-}

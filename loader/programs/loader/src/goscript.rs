@@ -129,9 +129,9 @@ where
             if acc_meta.is_signer != account.is_signer {
                 return Err(error!(GolError::RtCheckSigner));
             }
-            // if acc_meta.access_mode.is_writable() != account.is_writable {
-            //     return Err(error!(GolError::RtCheckMutable));
-            // }
+            if acc_meta.is_mut != account.is_writable {
+                return Err(error!(GolError::RtCheckMutable));
+            }
             fields.push(solana::SolanaFfi::make_account_info_ptr(ctx, account, i));
         }
         for (i, data_meta) in self.ix_meta.accounts_data.iter() {

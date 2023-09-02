@@ -2,9 +2,9 @@
 import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, AnchorProvider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
-import { BinaryWriter } from 'borsh';
+import * as borsh from 'borsh';
 import { IDL as LoaderIDL, Loader } from "./loader.js";
-import { Idl, IdlInstruction, IdlAccountItem, IdlAccounts, isIdlAccounts } from "./idl.js";
+import { Idl, IdlInstruction, IdlAccountItem, IdlAccounts, isIdlAccounts, IdlType } from "./idl.js";
 import { AllInstructions, MethodsFn, MakeMethodsNamespace, ArgsTuple, IdlTypes } from './types.js';
 import { createHash } from "crypto";
 
@@ -169,24 +169,13 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
   }
 
   private _argsBuffer(args: ArgsTuple<I["args"], IdlTypes<IDL>>): Buffer {
-    const writer = new BinaryWriter();
-
+    const buffers:Array<Uint8Array> = [];
     args.forEach((arg, i) => {
       const type = this._idlIx.args[i].type;
-
-      // todo: support all types
-      if (type === "u8") {
-        writer.writeU8(arg as number);
-      } else if (type === "u64") {
-        writer.writeU64(arg as number);
-      } else if (type === "string") {
-        writer.writeString(arg as string);
-      } else {
-        throw new Error(`unsupported type ${type}`);
-      }
+      const schema = getTypeSchema(type);
+      buffers.push(borsh.serialize(schema, arg));
     });
-
-    return writer.toArray() as Buffer;
+    return Buffer.concat(buffers);
   }
 
   public args(args: ArgsTuple<I["args"], IdlTypes<IDL>>): void {
@@ -295,3 +284,31 @@ export function address2Pubkey(address: Address): PublicKey {
   return address instanceof PublicKey ? address : new PublicKey(address);
 }
 
+function getTypeSchema(idlType: IdlType): borsh.Schema {
+  if (typeof idlType === 'string') {
+    if ([
+      "bool",
+      "u8",
+      "i8",
+      "u16",
+      "i16",
+      "u32",
+      "i32",
+      "f32",
+      "u64",
+      "i64",
+      "f64",
+      "string"
+    ].includes(idlType)) {
+      return idlType as string;
+    } else {
+      throw new Error(`Not a valid type: ${idlType}`);
+    }
+  } else if ("vec" in idlType) {
+    return {array:{type: idlType.vec as string}};
+  } else if ("array" in idlType) {
+    return {array:{type: idlType.array[0] as string, "len": idlType.array[1]}};
+  } else {
+    throw new Error(`Not a valid type: ${idlType}`);
+  }
+}

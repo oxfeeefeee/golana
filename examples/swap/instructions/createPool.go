@@ -65,5 +65,5 @@ func (ix *IxCreatePool) Process() {
 	data.feeRate = ix.feeRate
 	ix.poolInfo_data = data
 	// Commit the data to the account
-	CommitData(ix.poolInfo)
+	ix.poolInfo.CommitData()
 }

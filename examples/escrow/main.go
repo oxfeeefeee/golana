@@ -59,7 +59,7 @@ func (ix *IxInit) Process() {
 	data.takerAmount = ix.takerAmount
 	ix.escrowAccount_data = data
 	// Then, commit the data to the account
-	CommitData(ix.escrowAccount)
+	ix.escrowAccount.CommitData()
 
 	vault_seeds := []SeedBump{{VAULT_PDA_SEED, ix.vaultAccountBump}}
 	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())

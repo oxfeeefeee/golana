@@ -37,7 +37,7 @@ func (ix *IxInit) Process() {
 	data.auth = *ix.user.Key
 	data.greetCount = ix.initialCount
 	ix.userAccount_data = data
-	CommitData(ix.userAccount)
+	ix.userAccount.CommitData()
 }
 
 type IxGreet struct {
@@ -58,7 +58,7 @@ func (ix *IxGreet) Process() {
 
 	// Increment the greetCount
 	ix.userAccount_data.greetCount++
-	CommitData(ix.userAccount)
+	ix.userAccount.CommitData()
 
 	//AbortOnError(errors.New("AbortOnError test"))
 

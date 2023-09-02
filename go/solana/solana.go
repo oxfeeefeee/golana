@@ -26,6 +26,18 @@ type AccountInfo struct {
 	Index uint
 }
 
+func (account *AccountInfo) CommitLamports() {
+	solFfi.commit_lamports(account.Index)
+}
+
+func (account *AccountInfo) CommitData() {
+	solFfi.commit_data(account.Index)
+}
+
+func (account *AccountInfo) CommitLamportsAndData() {
+	solFfi.commit_lamports_and_data(account.Index)
+}
+
 type Ix interface {
 	Process()
 }
@@ -36,22 +48,6 @@ func GetIx() Ix {
 
 func GetId() *PublicKey {
 	return solFfi.get_id()
-}
-
-func CommitLamports(account *AccountInfo) {
-	solFfi.commit_lamports(account.Index)
-}
-
-func CommitData(account *AccountInfo) {
-	solFfi.commit_data(account.Index)
-}
-
-func CommitLamportsAndData(account *AccountInfo) {
-	solFfi.commit_lamports_and_data(account.Index)
-}
-
-func CommitEverything() {
-	solFfi.commit_everything()
 }
 
 func AbortOnError(e error) {

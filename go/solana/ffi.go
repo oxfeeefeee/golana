@@ -16,19 +16,27 @@ type ffiSolana interface {
 
 	get_id() *PublicKey
 
-	commit_lamports(index uint)
+	account_create(from, account Account, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) unsafe.Pointer
 
-	commit_data(index uint)
+	account_key(account Account) *PublicKey
 
-	commit_lamports_and_data(index uint)
+	account_lamports(account Account) uint64
 
-	commit_everything()
+	account_set_lamports(account Account, lamports uint64)
+
+	account_owner(account Account) *PublicKey
+
+	account_executable(account Account) bool
+
+	account_rent_epoch(account Account) uint64
+
+	account_data(account Account) interface{}
+
+	account_save_data(account Account, data interface{})
 
 	error_string(ptr unsafe.Pointer) string
 
 	log_compute_unit()
 
 	find_program_address(seed string, program *PublicKey) (*PublicKey, uint8)
-
-	create_account(from, to uint, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) unsafe.Pointer
 }

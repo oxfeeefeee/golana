@@ -8,28 +8,26 @@ import (
 
 type IxDeposit struct {
 	// The depositor, i.e. the liquidity provider
-	depositor *AccountInfo `golana:"mut, signer"`
+	depositor Account `account:"mut, signer"`
 	// The mint of the liquidity token
-	mintLiquidity *AccountInfo `golana:"mut"`
-	mintLpAuth    *AccountInfo
+	mintLiquidity Account `account:"mut"`
+	mintLpAuth    Account
 	// depositor's token A/B account
-	tokenA *AccountInfo `golana:"mut"`
-	tokenB *AccountInfo `golana:"mut"`
+	tokenA Account `account:"mut"`
+	tokenB Account `account:"mut"`
 	// depositor's liqudity token account, i.e the assosicated account
-	tokenLiquidity *AccountInfo `golana:"mut"`
+	tokenLiquidity Account `account:"mut"`
 
 	// The vault holding token A/B, i.e. the SPL token account
-	tokenAVault    *AccountInfo `golana:"mut"`
-	tokenBVault    *AccountInfo `golana:"mut"`
-	vaultAuthority *AccountInfo
+	tokenAVault    Account `account:"mut"`
+	tokenBVault    Account `account:"mut"`
+	vaultAuthority Account
 	// The pool account storing the pool data
-	poolInfo *AccountInfo `golana:"mut"`
+	poolInfo Account `data:"poolData"`
 
-	systemProgram          *AccountInfo
-	tokenProgram           *AccountInfo
-	associatedTokenProgram *AccountInfo
-
-	poolInfo_data *poolData
+	systemProgram          Account
+	tokenProgram           Account
+	associatedTokenProgram Account
 
 	// The amount of token A/B to deposit
 	amountA      uint64
@@ -50,7 +48,6 @@ func (ix *IxDeposit) Process() {
 	))
 
 	// Calculate numbers
-
 	var amountA, amountB, liquidity uint64
 	vaultA, err := token.UnpackAccount(ix.tokenAVault)
 	AbortOnError(err)
@@ -59,7 +56,8 @@ func (ix *IxDeposit) Process() {
 	if vaultA.Amount == 0 && vaultB.Amount == 0 {
 		// This is the first deposit, calculate the initial liquidity
 		liquidity = math2.U64GeometryMean(ix.amountA, ix.amountB)
-		if liquidity < ix.poolInfo_data.minLiquidity {
+		data := ix.poolInfo.Data().(*poolData)
+		if liquidity < data.minLiquidity {
 			panic("liquidity less than minimum")
 		}
 		amountA, amountB = ix.amountA, ix.amountB

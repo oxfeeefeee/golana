@@ -8,18 +8,18 @@ import (
 
 type IxTrade struct {
 	// The trader, i.e. the liquidity provider
-	trader *AccountInfo `golana:"mut, signer"`
+	trader Account `account:"mut, signer"`
 	// trader's token A/B account
-	tokenA *AccountInfo `golana:"mut"`
-	tokenB *AccountInfo `golana:"mut"`
+	tokenA Account `account:"mut"`
+	tokenB Account `account:"mut"`
 	// The vault holding token A/B, i.e. the SPL token account
-	tokenAVault    *AccountInfo `golana:"mut"`
-	tokenBVault    *AccountInfo `golana:"mut"`
-	vaultAuthority *AccountInfo
+	tokenAVault    Account `account:"mut"`
+	tokenBVault    Account `account:"mut"`
+	vaultAuthority Account
 	// The pool account storing the pool data
-	poolInfo *AccountInfo `golana:"mut"`
+	poolInfo Account
 
-	tokenProgram *AccountInfo
+	tokenProgram Account
 
 	// Trade amountA for at least expectedAmountB
 	amountA         uint64

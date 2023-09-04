@@ -37,7 +37,7 @@ type Mint struct {
 	FreezeAuthority *PublicKey
 }
 
-type Account struct {
+type TokenAccount struct {
 	Mint            *PublicKey
 	Owner           *PublicKey
 	Amount          uint64
@@ -49,47 +49,47 @@ type Account struct {
 	CloseAuthority  *PublicKey
 }
 
-func UnpackMint(account *AccountInfo) (*Mint, error) {
-	mint, err := tokenFfi.unpack_mint(account.Index)
+func UnpackMint(account Account) (*Mint, error) {
+	mint, err := tokenFfi.unpack_mint(account)
 	return mint, NewSolanaError(err)
 }
 
-func UnpackAccount(account *AccountInfo) (*Account, error) {
-	acc, err := tokenFfi.unpack_account(account.Index)
+func UnpackAccount(account Account) (*TokenAccount, error) {
+	acc, err := tokenFfi.unpack_account(account)
 	return acc, NewSolanaError(err)
 }
 
-func CreateAndInitAccount(from, to, mint *AccountInfo, owner *PublicKey, signerSeeds []SeedBump) error {
-	err := tokenFfi.create_and_init_account(from.Index, to.Index, mint.Index, owner, signerSeeds)
+func CreateAndInitAccount(from, to, mint Account, owner *PublicKey, signerSeeds []SeedBump) error {
+	err := tokenFfi.create_and_init_account(from, to, mint, owner, signerSeeds)
 	return NewSolanaError(err)
 }
 
-func CloseAccount(account, dest, owner *AccountInfo, signerSeeds []SeedBump) error {
-	err := tokenFfi.close_account(account.Index, dest.Index, owner.Index, signerSeeds)
+func CloseAccount(account, dest, owner Account, signerSeeds []SeedBump) error {
+	err := tokenFfi.close_account(account, dest, owner, signerSeeds)
 	return NewSolanaError(err)
 }
 
-func SetAuthority(accountOrMint, currentAuth *AccountInfo, newAuth *PublicKey, authType AuthorityType, signerSeeds []SeedBump) error {
-	err := tokenFfi.set_authority(accountOrMint.Index, currentAuth.Index, newAuth, authType, signerSeeds)
+func SetAuthority(accountOrMint, currentAuth Account, newAuth *PublicKey, authType AuthorityType, signerSeeds []SeedBump) error {
+	err := tokenFfi.set_authority(accountOrMint, currentAuth, newAuth, authType, signerSeeds)
 	return NewSolanaError(err)
 }
 
-func Transfer(from, to, auth *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
-	err := tokenFfi.transfer(from.Index, to.Index, auth.Index, amount, signerSeeds)
+func Transfer(from, to, auth Account, amount uint64, signerSeeds []SeedBump) error {
+	err := tokenFfi.transfer(from, to, auth, amount, signerSeeds)
 	return NewSolanaError(err)
 }
 
-func MintTo(mint, dest, auth *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
-	err := tokenFfi.mint_to(mint.Index, dest.Index, auth.Index, amount, signerSeeds)
+func MintTo(mint, dest, auth Account, amount uint64, signerSeeds []SeedBump) error {
+	err := tokenFfi.mint_to(mint, dest, auth, amount, signerSeeds)
 	return NewSolanaError(err)
 }
 
-func Burn(account, mint, auth *AccountInfo, amount uint64, signerSeeds []SeedBump) error {
-	err := tokenFfi.burn(account.Index, mint.Index, auth.Index, amount, signerSeeds)
+func Burn(account, mint, auth Account, amount uint64, signerSeeds []SeedBump) error {
+	err := tokenFfi.burn(account, mint, auth, amount, signerSeeds)
 	return NewSolanaError(err)
 }
 
-func CreateAssociatedAccount(from, to, owner, mint, sys, spl *AccountInfo, idempotent bool) error {
-	err := tokenFfi.create_associated_account(from.Index, to.Index, owner.Index, mint.Index, sys.Index, spl.Index, idempotent)
+func CreateAssociatedAccount(from, to, owner, mint, sys, spl Account, idempotent bool) error {
+	err := tokenFfi.create_associated_account(from, to, owner, mint, sys, spl, idempotent)
 	return NewSolanaError(err)
 }

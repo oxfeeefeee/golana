@@ -18,20 +18,18 @@ type poolData struct {
 
 type IxCreatePool struct {
 	// The creator of the pool, i.e. the one who called IxCreatePool
-	creator *AccountInfo `golana:"mut, signer"`
+	creator Account `account:"mut, signer"`
 	// The mint of token A/B
-	mintA *AccountInfo
-	mintB *AccountInfo
+	mintA Account
+	mintB Account
 	// The vault holding token A/B, i.e. the SPL token account
-	tokenAVault *AccountInfo `golana:"mut, signer"`
-	tokenBVault *AccountInfo `golana:"mut, signer"`
+	tokenAVault Account `account:"mut, signer"`
+	tokenBVault Account `account:"mut, signer"`
 	// The pool account storing the pool data
-	poolInfo      *AccountInfo `golana:"mut"`
-	systemProgram *AccountInfo
-	tokenProgram  *AccountInfo
-	rent          *AccountInfo
-
-	poolInfo_data *poolData `golana:"init"`
+	poolInfo      Account `account:"mut" data:"poolData"`
+	systemProgram Account
+	tokenProgram  Account
+	rent          Account
 
 	// The minimum liquidity to deposit, liquidity  = sqrt(amountA * amountB)
 	minLiquidity uint64
@@ -58,12 +56,10 @@ func (ix *IxCreatePool) Process() {
 
 	// Initialize the pool account
 	data := new(poolData)
-	data.creator = *ix.creator.Key
-	data.tokenAVault = *ix.tokenAVault.Key
-	data.tokenBVault = *ix.tokenBVault.Key
+	data.creator = *ix.creator.Key()
+	data.tokenAVault = *ix.tokenAVault.Key()
+	data.tokenBVault = *ix.tokenBVault.Key()
 	data.minLiquidity = ix.minLiquidity
 	data.feeRate = ix.feeRate
-	ix.poolInfo_data = data
-	// Commit the data to the account
-	ix.poolInfo.CommitData()
+	ix.poolInfo.SaveData(data)
 }

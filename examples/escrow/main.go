@@ -25,22 +25,22 @@ type IxInit struct {
 	// Use tags to specify the account attributes:
 	// - `golana:"signer"` for the accounts that are used as signer
 	// - `golana:"mut"` for the accounts that are used as writable
-	initializer                    *AccountInfo `golana:"mut, signer"`
-	mint                           *AccountInfo
-	vaultAccount                   *AccountInfo `golana:"mut"`
-	initializerDepositTokenAccount *AccountInfo `golana:"mut"`
-	initializerReceiveTokenAccount *AccountInfo
-	escrowAccount                  *AccountInfo `golana:"mut"`
-	systemProgram                  *AccountInfo
-	rent                           *AccountInfo
-	tokenProgram                   *AccountInfo
+	initializer                    Account `account:"mut, signer"`
+	mint                           Account
+	vaultAccount                   Account `account:"mut"`
+	initializerDepositTokenAccount Account `account:"mut"`
+	initializerReceiveTokenAccount Account
+	escrowAccount                  Account `account:"mut" data:"EscrowAccountData"`
+	systemProgram                  Account
+	rent                           Account
+	tokenProgram                   Account
 
 	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
 	// Use the corresponding account name with a _data suffix,
 	// and add the `golana:"init"` or `golana:"mut"` tag to the field:
 	// - `golana:"init"` for the data that will be initialized by the instruction
 	// - `golana:"mut"` for the data that will be written by the instruction
-	escrowAccount_data *EscrowAccountData `golana:"init"`
+	// escrowAccount_data *EscrowAccountData `golana:"init"`
 
 	// Finally, list all the instruction parameters
 	vaultAccountBump  uint8
@@ -52,14 +52,13 @@ type IxInit struct {
 func (ix *IxInit) Process() {
 	// First, stores the data in the escrow account
 	data := new(EscrowAccountData)
-	data.initializerKey = *ix.initializer.Key
-	data.initializerDepositTokenAccount = *ix.initializerDepositTokenAccount.Key
-	data.initializerReceiveTokenAccount = *ix.initializerReceiveTokenAccount.Key
+	data.initializerKey = *ix.initializer.Key()
+	data.initializerDepositTokenAccount = *ix.initializerDepositTokenAccount.Key()
+	data.initializerReceiveTokenAccount = *ix.initializerReceiveTokenAccount.Key()
 	data.initializerAmount = ix.initializerAmount
 	data.takerAmount = ix.takerAmount
-	ix.escrowAccount_data = data
 	// Then, commit the data to the account
-	ix.escrowAccount.CommitData()
+	ix.escrowAccount.SaveData(data)
 
 	vault_seeds := []SeedBump{{VAULT_PDA_SEED, ix.vaultAccountBump}}
 	vaultAuthority, _ := FindProgramAddress(ESCROW_PDA_SEED, GetId())
@@ -77,39 +76,38 @@ func (ix *IxInit) Process() {
 }
 
 type IxExchange struct {
-	taker                          *AccountInfo `golana:"signer"`
-	takerDepositTokenAccount       *AccountInfo `golana:"mut"`
-	takerReceiveTokenAccount       *AccountInfo `golana:"mut"`
-	initializer                    *AccountInfo `golana:"mut"`
-	initializerDepositTokenAccount *AccountInfo `golana:"mut"`
-	initializerReceiveTokenAccount *AccountInfo `golana:"mut"`
-	escrowAccount                  *AccountInfo `golana:"mut"`
-	vaultAccount                   *AccountInfo `golana:"mut"`
-	vaultAuthority                 *AccountInfo
-	tokenProgram                   *AccountInfo
-
-	escrowAccount_data *EscrowAccountData
+	taker                          Account `account:"signer"`
+	takerDepositTokenAccount       Account `account:"mut"`
+	takerReceiveTokenAccount       Account `account:"mut"`
+	initializer                    Account `account:"mut"`
+	initializerDepositTokenAccount Account `account:"mut"`
+	initializerReceiveTokenAccount Account `account:"mut"`
+	escrowAccount                  Account `account:"mut" data:"EscrowAccountData"`
+	vaultAccount                   Account `account:"mut"`
+	vaultAuthority                 Account
+	tokenProgram                   Account
 
 	escrowBump uint8
 }
 
 func (ix *IxExchange) Process() {
 	// assert is a built-in function added by the Goscript compiler
-	assert(*ix.initializer.Key == ix.escrowAccount_data.initializerKey)
-	assert(*ix.initializerDepositTokenAccount.Key == ix.escrowAccount_data.initializerDepositTokenAccount)
-	assert(*ix.initializerReceiveTokenAccount.Key == ix.escrowAccount_data.initializerReceiveTokenAccount)
+	data := ix.escrowAccount.Data().(*EscrowAccountData)
+	assert(*ix.initializer.Key() == data.initializerKey)
+	assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount)
+	assert(*ix.initializerReceiveTokenAccount.Key() == data.initializerReceiveTokenAccount)
 
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 	AbortOnError(token.Transfer(
 		ix.takerDepositTokenAccount,
 		ix.initializerReceiveTokenAccount,
 		ix.taker,
-		ix.escrowAccount_data.takerAmount, nil))
+		data.takerAmount, nil))
 	AbortOnError(token.Transfer(
 		ix.vaultAccount,
 		ix.takerReceiveTokenAccount,
 		ix.vaultAuthority,
-		ix.escrowAccount_data.initializerAmount,
+		data.initializerAmount,
 		authority_seeds))
 	AbortOnError(token.CloseAccount(
 		ix.vaultAccount,
@@ -120,21 +118,20 @@ func (ix *IxExchange) Process() {
 }
 
 type IxCancel struct {
-	initializer                    *AccountInfo `golana:"signer, mut"`
-	initializerDepositTokenAccount *AccountInfo `golana:"mut"`
-	vaultAccount                   *AccountInfo `golana:"mut"`
-	vaultAuthority                 *AccountInfo
-	escrowAccount                  *AccountInfo `golana:"mut"`
-	tokenProgram                   *AccountInfo
-
-	escrowAccount_data *EscrowAccountData
+	initializer                    Account `account:"signer, mut"`
+	initializerDepositTokenAccount Account `account:"mut"`
+	vaultAccount                   Account `account:"mut"`
+	vaultAuthority                 Account
+	escrowAccount                  Account `account:"mut" data:"EscrowAccountData"`
+	tokenProgram                   Account
 
 	escrowBump uint8
 }
 
 func (ix *IxCancel) Process() {
-	assert(*ix.initializer.Key == ix.escrowAccount_data.initializerKey)
-	assert(*ix.initializerDepositTokenAccount.Key == ix.escrowAccount_data.initializerDepositTokenAccount)
+	data := ix.escrowAccount.Data().(*EscrowAccountData)
+	assert(*ix.initializer.Key() == data.initializerKey)
+	assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount)
 
 	//_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
@@ -143,7 +140,7 @@ func (ix *IxCancel) Process() {
 		ix.vaultAccount,
 		ix.initializerDepositTokenAccount,
 		ix.vaultAuthority,
-		ix.escrowAccount_data.initializerAmount,
+		data.initializerAmount,
 		authority_seeds))
 	AbortOnError(token.CloseAccount(
 		ix.vaultAccount,

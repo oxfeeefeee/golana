@@ -1,7 +1,7 @@
 use crate::errors::*;
 use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
-use go_vm::*;
+use go_vm::{types::PackageObj, *};
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone, PartialEq, Eq)]
 pub enum AccessMode {
@@ -25,7 +25,7 @@ pub struct AccMeta {
     pub name: String,
     pub is_signer: bool,
     pub is_mut: bool,
-    pub access_mode: AccessMode,
+    pub data_meta: Option<types::Meta>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
@@ -35,7 +35,6 @@ pub struct IxMeta {
     pub process_method: types::FunctionKey,
     pub process_method_index: usize,
     pub accounts: Vec<AccMeta>,
-    pub accounts_data: Vec<(usize, types::Meta)>,
     pub args: Vec<(String, types::Meta)>,
 }
 
@@ -44,6 +43,7 @@ impl IxMeta {
         name: &str,
         gos_meta: types::Meta,
         account: &types::Meta,
+        pkg: &types::PackageObj,
         metas: &types::MetadataObjs,
     ) -> Result<IxMeta> {
         let (methods, inner_meta) = metas[gos_meta.key].as_named();
@@ -67,18 +67,20 @@ impl IxMeta {
         while i < fields.len() {
             let meta = &fields[i].meta;
             let name = &fields[i].name;
-            let tags = &fields[i].lookup_tag("golana");
-            let (is_signer, is_mut) = Self::is_signer_or_mut(tags);
+            let account_tag = &fields[i].lookup_tag("account");
+            let (is_signer, is_mut) = Self::is_signer_or_mut(account_tag);
+            let data_tag = &fields[i].lookup_tag("data");
+            let data_meta = Self::get_data_type(data_tag, pkg)?;
             if meta.key == account.key {
-                if meta.ptr_depth != 1 {
-                    return Err(error!(GolError::NonPointerAccountInfo));
+                if meta.ptr_depth != 0 {
+                    return Err(error!(GolError::PointerAccount));
                 }
                 accounts.push((
                     AccMeta {
                         name: name.to_owned(),
                         is_signer,
                         is_mut,
-                        access_mode: AccessMode::None,
+                        data_meta,
                     },
                     &fields[i].name,
                 ));
@@ -88,45 +90,7 @@ impl IxMeta {
             }
         }
 
-        // Then, the data declarations
-        let mut accounts_data = vec![];
-        while i < fields.len() {
-            let field = &fields[i];
-            if field.meta.ptr_depth == 1 {
-                let mut found = false;
-                for (index, acc) in accounts.iter_mut().enumerate() {
-                    let mut prefix = acc.1.to_owned();
-                    prefix.push('_');
-                    if field.name.starts_with(&prefix) {
-                        let post_fix = &field.name[prefix.len()..];
-                        if post_fix != "data" {
-                            return Err(error!(GolError::AccountNamePrefixReserved));
-                        }
-                        let data_index = accounts_data.len();
-                        let mode =
-                            Self::get_data_access_mode(&field.lookup_tag("golana"), data_index)?;
-                        if acc.0.access_mode != AccessMode::None {
-                            return Err(error!(GolError::DuplicatedDataDeclare));
-                        }
-                        acc.0.access_mode = mode;
-                        if field.meta.ptr_depth != 1 {
-                            return Err(error!(GolError::NonPointerDataDeclare));
-                        }
-                        accounts_data.push((index, field.meta.unptr_to()));
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    return Err(error!(GolError::BadDataDeclare));
-                }
-                i += 1;
-            } else {
-                break;
-            }
-        }
-
-        // Finally, arguments
+        // Then arguments
         let mut args = vec![];
         while i < fields.len() {
             let meta = &fields[i].meta;
@@ -144,24 +108,8 @@ impl IxMeta {
             process_method,
             process_method_index,
             accounts: accounts.into_iter().map(|(acc, _)| acc).collect(),
-            accounts_data,
             args,
         })
-    }
-
-    fn get_data_access_mode(tag: &Option<String>, index: usize) -> Result<AccessMode> {
-        if let Some(tag) = tag {
-            let tag = tag.trim();
-            if tag == "init" {
-                Ok(AccessMode::Initialize(index))
-            } else if tag == "mut" {
-                Ok(AccessMode::Mutable(index))
-            } else {
-                Err(error!(GolError::BadDataDeclareTag))
-            }
-        } else {
-            Ok(AccessMode::ReadOnly(index))
-        }
     }
 
     fn is_signer_or_mut(tag: &Option<String>) -> (bool, bool) {
@@ -173,6 +121,22 @@ impl IxMeta {
         }
         (false, false)
     }
+
+    fn get_data_type(tag: &Option<String>, pkg: &PackageObj) -> Result<Option<types::Meta>> {
+        match tag {
+            Some(t) => {
+                let index = pkg
+                    .member_index(&t)
+                    .ok_or(error!(GolError::DataTypeNotFound))?;
+                let meta = pkg.member(*index);
+                if meta.typ() != types::ValueType::Metadata {
+                    return Err(error!(GolError::DataTypeNotFound));
+                }
+                Ok(Some(meta.as_metadata().clone()))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
@@ -182,7 +146,7 @@ pub struct TxMeta {
 }
 
 pub fn check(bc: &Bytecode) -> Result<TxMeta> {
-    let account_info_meta = get_account_info_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
+    let account_meta = get_account_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
 
     let mut iface_meta = None;
     let mut ix_details = Vec::new();
@@ -200,7 +164,7 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
                 {
                     let member = pkg.member(*index);
                     let gmeta = member.as_metadata();
-                    ix_details.push((name, gmeta.clone()));
+                    ix_details.push((name, gmeta.clone(), pkg));
                 }
             }
         }
@@ -208,7 +172,7 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
 
     let instructions = ix_details
         .into_iter()
-        .map(|(name, meta)| IxMeta::new(name, meta, &account_info_meta, &bc.objects.metas))
+        .map(|(name, meta, pkg)| IxMeta::new(name, meta, &account_meta, pkg, &bc.objects.metas))
         .collect::<Result<Vec<IxMeta>>>()?;
     Ok(TxMeta {
         iface_meta: iface_meta.unwrap(),
@@ -216,7 +180,7 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
     })
 }
 
-fn get_account_info_meta(bc: &Bytecode) -> Option<types::Meta> {
+fn get_account_meta(bc: &Bytecode) -> Option<types::Meta> {
     let key = bc
         .objects
         .packages
@@ -225,7 +189,7 @@ fn get_account_info_meta(bc: &Bytecode) -> Option<types::Meta> {
         .find(|(_, pkg)| pkg.name() == "solana")
         .map(|(i, _)| i.into())?;
     let pkg = &bc.objects.packages[key];
-    let account = pkg.member(*pkg.member_index("AccountInfo")?);
+    let account = pkg.member(*pkg.member_index("Account")?);
     match account.typ() {
         types::ValueType::Metadata => Some(account.as_metadata().clone()),
         _ => None,

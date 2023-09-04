@@ -7,15 +7,15 @@ import (
 
 type IxClosePool struct {
 	// The creator of the pool, i.e. the one who called IxClosePool
-	creator *AccountInfo `golana:"mut, signer"`
+	creator Account `account:"mut, signer"`
 	// The vault holding token A/B, i.e. the SPL token account
-	tokenAVault    *AccountInfo `golana:"mut"`
-	tokenBVault    *AccountInfo `golana:"mut"`
-	vaultAuthority *AccountInfo
+	tokenAVault    Account `account:"mut"`
+	tokenBVault    Account `account:"mut"`
+	vaultAuthority Account
 	// The pool account storing the pool data
-	poolInfo      *AccountInfo `golana:"mut"`
-	systemProgram *AccountInfo
-	tokenProgram  *AccountInfo
+	poolInfo      Account `account:"mut"`
+	systemProgram Account
+	tokenProgram  Account
 
 	authBump uint8
 }

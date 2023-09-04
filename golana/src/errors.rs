@@ -14,18 +14,16 @@ pub enum GolError {
     MethodNotFound,
     #[msg("Method 'process' has to have a pointer receiver")]
     NonPointerReceiver,
-    #[msg("AccountInfo in Ix has to be a pointer")]
-    NonPointerAccountInfo,
+    #[msg("Account in Ix cannot be a pointer")]
+    PointerAccount,
     #[msg("Account Data in Ix has to be a pointer")]
     NonPointerDataDeclare,
     #[msg("Account name can only be used as a prefix for data declaration")]
     AccountNamePrefixReserved,
-    #[msg("Duplicated Account data declaration")]
-    DuplicatedDataDeclare,
-    #[msg("Bad Account data declaration")]
-    BadDataDeclare,
-    #[msg("Bad Account data declaration tag")]
-    BadDataDeclareTag,
+    #[msg("Data type specified in the tag is not found")]
+    DataTypeNotFound,
+    #[msg("Data type not specified in the tag of the account")]
+    DataTypeNotSpecified,
     #[msg("This argument type is not supported")]
     WrongArgType,
     #[msg("Unexpected finalize step")]

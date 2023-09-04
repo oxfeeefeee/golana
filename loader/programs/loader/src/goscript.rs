@@ -85,43 +85,6 @@ where
         }
     }
 
-    pub(crate) fn write_back_data(
-        &self,
-        ctx: &FfiCtx,
-        indices: std::ops::Range<usize>,
-        lamports: bool,
-        data: bool,
-    ) -> Result<()> {
-        let borrowed = self.gos_ix.borrow();
-        let gos_ix = borrowed
-            .as_ref()
-            .unwrap()
-            .as_non_nil_interface()
-            .unwrap()
-            .underlying_value()
-            .unwrap();
-        let gos_ix = ctx.deref_pointer(&gos_ix).unwrap();
-        let ix_fields: &Vec<GosValue> = &gos_ix.as_struct().0.borrow_fields();
-        for index in indices {
-            let account_info = ctx.deref_pointer(&ix_fields[index]).unwrap();
-            let account_info_fields: &Vec<GosValue> = &account_info.as_struct().0.borrow_fields();
-            if lamports {
-                let val = *account_info_fields[1].as_uint64();
-                **self.accounts[index].lamports.borrow_mut() = val;
-            }
-            if data {
-                let data_fields = &ix_fields[self.accounts.len()..];
-                let account_meta = &self.ix_meta.accounts[index];
-                if let Some(data_index) = account_meta.access_mode.get_data_index() {
-                    let mut buf: &mut [u8] = &mut self.accounts[index].data.borrow_mut();
-                    let data_obj = ctx.deref_pointer(&data_fields[data_index]).unwrap();
-                    GosValue::serialize_wo_type(&data_obj, &mut buf)?;
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn deserialize_ix(&self, ctx: &FfiCtx) -> Result<GosValue> {
         let mut fields = vec![];
         for (i, acc_meta) in self.ix_meta.accounts.iter().enumerate() {
@@ -132,18 +95,9 @@ where
             if acc_meta.is_mut != account.is_writable {
                 return Err(error!(GolError::RtCheckMutable));
             }
-            fields.push(solana::SolanaFfi::make_account_info_ptr(ctx, account, i));
+            fields.push(i.into());
         }
-        for (i, data_meta) in self.ix_meta.accounts_data.iter() {
-            let data = match self.ix_meta.accounts[*i].access_mode {
-                AccessMode::Initialize(_) => ctx.zero_val(data_meta),
-                _ => {
-                    let mut buf: &[u8] = &self.accounts[*i].data.borrow();
-                    GosValue::deserialize_wo_type(data_meta, &ctx.vm_objs.metas, &mut buf)?
-                }
-            };
-            fields.push(FfiCtx::new_pointer(data));
-        }
+
         let mut buf: &[u8] = &self.args;
         for arg_meta in self.ix_meta.args.iter() {
             fields.push(GosValue::deserialize_wo_type(

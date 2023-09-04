@@ -1,6 +1,8 @@
 use crate::goscript::Instruction;
+use anchor_lang::error;
 use go_vm::types::*;
 use go_vm::*;
+use golana::GolError;
 use solana_program::program_option::COption;
 use solana_program::{self, account_info::AccountInfo, pubkey::Pubkey};
 use std::rc::Rc;
@@ -22,30 +24,6 @@ impl SolanaFfi {
         Self::make_pub_key_ptr(ctx, ix.gos_program_id.clone())
     }
 
-    fn ffi_commit_lamports(ctx: &FfiCtx, index: usize) {
-        Self::get_instruction(ctx)
-            .write_back_data(ctx, index..index + 1, true, false)
-            .unwrap();
-    }
-
-    fn ffi_commit_data(ctx: &FfiCtx, index: usize) {
-        Self::get_instruction(ctx)
-            .write_back_data(ctx, index..index + 1, false, true)
-            .expect("commit data error!");
-    }
-
-    fn ffi_commit_lamports_and_data(ctx: &FfiCtx, index: usize) {
-        Self::get_instruction(ctx)
-            .write_back_data(ctx, index..index + 1, true, true)
-            .expect("commit lamports and data error!");
-    }
-
-    fn ffi_commit_everything(ctx: &FfiCtx) {
-        let ix = Self::get_instruction(ctx);
-        ix.write_back_data(ctx, 0..ix.accounts.len(), true, true)
-            .expect("commit everything error!");
-    }
-
     fn ffi_error_string(e: GosValue) -> RuntimeResult<String> {
         let rust_err = e.as_non_nil_unsafe_ptr()?.downcast_ref::<Error>()?;
         Ok(rust_err.0.to_string())
@@ -63,7 +41,7 @@ impl SolanaFfi {
         (Self::make_pub_key_ptr(ctx, pk), bump)
     }
 
-    fn ffi_create_account(
+    fn ffi_account_create(
         ctx: &FfiCtx,
         from_index: usize,
         to_index: usize,
@@ -81,6 +59,75 @@ impl SolanaFfi {
         );
         let result = Self::invoke_signed(&ix, &[from, to], signer_seeds, inst.gos_program_id);
         Self::unwrap_empty_result(result)
+    }
+
+    fn ffi_account_key(ctx: &FfiCtx, index: usize) -> GosValue {
+        let inst = Self::get_instruction(ctx);
+        Self::make_pub_key_ptr(ctx, *inst.accounts[index].key)
+    }
+
+    fn ffi_account_lamports(ctx: &FfiCtx, index: usize) -> u64 {
+        let inst = Self::get_instruction(ctx);
+        **inst.accounts[index].lamports.borrow()
+    }
+
+    fn ffi_set_account_lamports(ctx: &FfiCtx, index: usize, lamports: u64) {
+        let inst = Self::get_instruction(ctx);
+        **inst.accounts[index].lamports.borrow_mut() = lamports;
+    }
+
+    fn ffi_account_owner(ctx: &FfiCtx, index: usize) -> GosValue {
+        let inst = Self::get_instruction(ctx);
+        Self::make_pub_key_ptr(ctx, *inst.accounts[index].owner)
+    }
+
+    fn ffi_account_executable(ctx: &FfiCtx, index: usize) -> bool {
+        let inst = Self::get_instruction(ctx);
+        inst.accounts[index].executable
+    }
+
+    fn ffi_account_rent_epoch(ctx: &FfiCtx, index: usize) -> u64 {
+        let inst = Self::get_instruction(ctx);
+        inst.accounts[index].rent_epoch
+    }
+
+    fn ffi_account_data(ctx: &FfiCtx, index: usize) -> GosValue {
+        let inst = Self::get_instruction(ctx);
+        let account = &inst.accounts[index];
+        let account_meta = &inst.ix_meta.accounts[index];
+        let result = || -> anyhow::Result<GosValue> {
+            if let Some(data_meta) = &account_meta.data_meta {
+                let mut buf: &[u8] = &account.data.borrow();
+                GosValue::deserialize_wo_type(data_meta, &ctx.vm_objs.metas, &mut buf)
+                    .map(|val| {
+                        ctx.new_empty_interface(FfiCtx::new_pointer(val), data_meta.ptr_to())
+                    })
+                    .map_err(Into::into)
+            } else {
+                Err(error!(GolError::MethodNotFound)).map_err(Into::into)
+            }
+        }();
+        result.unwrap()
+    }
+
+    fn ffi_account_save_data(ctx: &FfiCtx, index: usize, data_iface: GosValue) {
+        let inst = Self::get_instruction(ctx);
+        let account = &inst.accounts[index];
+        let account_meta = &inst.ix_meta.accounts[index];
+        let result = || -> anyhow::Result<()> {
+            if let Some(_) = &account_meta.data_meta {
+                let mut buf: &mut [u8] = &mut account.data.borrow_mut();
+                let data_ptr = data_iface
+                    .as_non_nil_interface()?
+                    .underlying_value()
+                    .unwrap();
+                let data_obj = ctx.deref_pointer(&data_ptr).unwrap();
+                GosValue::serialize_wo_type(&data_obj, &mut buf).map_err(Into::into)
+            } else {
+                Err(error!(GolError::MethodNotFound)).map_err(Into::into)
+            }
+        }();
+        result.unwrap();
     }
 
     pub(crate) fn invoke_signed(
@@ -104,19 +151,6 @@ impl SolanaFfi {
             solana_program::program::invoke_signed(instruction, account_infos, &vec![])
         }
         .map_err(Into::into)
-    }
-
-    pub(crate) fn make_account_info_ptr(ctx: &FfiCtx, ai: &AccountInfo, index: usize) -> GosValue {
-        let key = Self::make_pub_key_ptr(ctx, *ai.key);
-        let lamports: GosValue = (**ai.lamports.borrow()).into();
-        let owner = Self::make_pub_key_ptr(ctx, *ai.owner);
-        let executable: GosValue = ai.executable.into();
-        let rent_epoch: GosValue = ai.rent_epoch.into();
-        let index_gos: GosValue = index.into();
-        let account_info = ctx.new_struct(vec![
-            key, lamports, owner, executable, rent_epoch, index_gos,
-        ]);
-        FfiCtx::new_pointer(account_info)
     }
 
     #[inline]

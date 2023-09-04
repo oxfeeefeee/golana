@@ -1,5 +1,6 @@
 use crate::goscript::Instruction;
 use anchor_lang::error;
+use anchor_lang::prelude::SolanaSysvar;
 use go_vm::types::*;
 use go_vm::*;
 use golana::GolError;
@@ -45,19 +46,24 @@ impl SolanaFfi {
         ctx: &FfiCtx,
         from_index: usize,
         to_index: usize,
-        owner: GosValue,
-        lamports: u64,
         space: u64,
         signer_seeds: GosValue,
     ) -> GosValue {
         let inst = Self::get_instruction(ctx);
         let from = inst.accounts[from_index].clone();
         let to = inst.accounts[to_index].clone();
-        let owner_pk = Self::get_pub_key(ctx, &owner).expect("ffi_create_account: bad owner");
-        let ix = solana_program::system_instruction::create_account(
-            from.key, to.key, lamports, space, &owner_pk,
-        );
-        let result = Self::invoke_signed(&ix, &[from, to], signer_seeds, inst.gos_program_id);
+        let result: anyhow::Result<()> = (move || {
+            let sol_rent = anchor_lang::prelude::Rent::get()?;
+            let lamports = sol_rent.minimum_balance(space as usize);
+            let ix = solana_program::system_instruction::create_account(
+                from.key,
+                to.key,
+                lamports,
+                space,
+                &crate::ID,
+            );
+            Self::invoke_signed(&ix, &[from, to], signer_seeds, inst.gos_program_id)
+        })();
         Self::unwrap_empty_result(result)
     }
 

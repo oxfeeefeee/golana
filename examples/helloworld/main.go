@@ -11,8 +11,9 @@ type IxInit struct {
 	// Use tags to specify the account attributes:
 	// - `account:"signer"` for the accounts that are used as signer
 	// - `account:"mut"` for the accounts that are used as writable
-	user        Account `account:"signer"`
-	userAccount Account `account:"mut" data:"userData"`
+	user          Account `account:"mut, signer"`
+	userAccount   Account `account:"mut, signer" data:"userData"`
+	systemProgram Account
 
 	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
 	// Use the corresponding account name with a _data suffix,
@@ -33,6 +34,8 @@ type userData struct {
 
 // This is the business logic of the IxInit
 func (ix *IxInit) Process() {
+	ix.userAccount.Create(ix.user, 512, nil)
+
 	data := new(userData)
 	// set the auth of userAccount as the user
 	data.auth = *ix.user.Key()

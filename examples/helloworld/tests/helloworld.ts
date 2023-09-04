@@ -13,6 +13,9 @@ describe("helloworld", async () => {
         const userAccount = Keypair.generate();
         const payer = Keypair.generate();
 
+        console.log(payer.publicKey)
+        console.log(userAccount.publicKey)
+
         it("Initialize program state", async () => {
             // Airdropping tokens to a payer.
             const latestBlockHash = await provider.connection.getLatestBlockhash();
@@ -23,26 +26,26 @@ describe("helloworld", async () => {
                 signature: airdrop,
             });
 
-           const userAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(userAccountSpace);
+        //    const userAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(userAccountSpace);
 
-            // Create the user account
-            const trans = await provider.sendAndConfirm(
-                (() => {
-                    const tx = new Transaction();
-                    tx.add(
-                        SystemProgram.createAccount({
-                            fromPubkey: payer.publicKey,
-                            newAccountPubkey: userAccount.publicKey,
-                            lamports: userAccountLamports,
-                            space: userAccountSpace,
-                            programId: hello.golanaLoader.programId,
-                        })
-                    );
-                    return tx;
-                })(),
-                [payer, userAccount],
-                { skipPreflight: true },
-            );
+        //     // Create the user account
+        //     const trans = await provider.sendAndConfirm(
+        //         (() => {
+        //             const tx = new Transaction();
+        //             tx.add(
+        //                 SystemProgram.createAccount({
+        //                     fromPubkey: payer.publicKey,
+        //                     newAccountPubkey: userAccount.publicKey,
+        //                     lamports: userAccountLamports,
+        //                     space: userAccountSpace,
+        //                     programId: hello.golanaLoader.programId,
+        //                 })
+        //             );
+        //             return tx;
+        //         })(),
+        //         [payer, userAccount],
+        //         { skipPreflight: true },
+        //     );
 
             // const result = await provider.connection.getTransaction(trans);
             // console.log(result)
@@ -55,12 +58,13 @@ describe("helloworld", async () => {
                 .accounts({
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,
+                    systemProgram: SystemProgram.programId,
                 })
                 .preInstructions([
                     ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
                     ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
                 ])
-                .signers([payer])
+                .signers([payer, userAccount]) 
                 .rpc();
             
             // const result = await provider.connection.getTransaction(trans);

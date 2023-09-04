@@ -14,8 +14,8 @@ type SeedBump struct {
 type Account uint
 
 // Initializes a new Account by calling the solana runtime createAccount function
-func (account Account) Create(from Account, owner *PublicKey, lamports, space uint64, signerSeeds []SeedBump) error {
-	p := solFfi.account_create(from, account, owner, lamports, space, signerSeeds)
+func (account Account) Create(from Account, space uint64, signerSeeds []SeedBump) error {
+	p := solFfi.account_create(from, account, space, signerSeeds)
 	return NewSolanaError(p)
 }
 

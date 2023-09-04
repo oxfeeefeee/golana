@@ -1,5 +1,5 @@
 // This TS project is based on https://github.com/coral-xyz/anchor/tree/master/ts/packages/anchor/src/program
-import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, AccountMeta, Signer, TransactionInstruction, ConfirmOptions, Connection, Transaction, VersionedTransaction, ComputeBudgetProgram } from "@solana/web3.js";
 import { Program as AnchorProgram, Provider, AnchorProvider, getProvider, utils, Address, Accounts } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 import * as borsh from 'borsh';
@@ -165,7 +165,12 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
     private _idlIx: IdlInstruction,
     args: ArgsTuple<I["args"], IdlTypes<IDL>>,
   ) {
-    this._exec = loader.methods.golExecute(_idlIx.name, this._argsBuffer(args));
+    const exec = loader.methods.golExecute(_idlIx.name, this._argsBuffer(args));
+    exec.preInstructions([
+      ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
+    ]);
+    this._exec = exec;
   }
 
   private _argsBuffer(args: ArgsTuple<I["args"], IdlTypes<IDL>>): Buffer {

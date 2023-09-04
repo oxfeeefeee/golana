@@ -170,10 +170,6 @@ describe("escrow", async () => {
           rent: SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID
         })
-        .preInstructions([
-          ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-          ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
-        ])
         .signers([initializerMainAccount])
         .rpc({ skipPreflight: true });
 
@@ -197,10 +193,6 @@ describe("escrow", async () => {
           vaultAuthority: vault_authority_pda,
           tokenProgram: TOKEN_PROGRAM_ID
         })
-        .preInstructions([
-          ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-          ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
-        ])
         .signers([takerMainAccount])
         .rpc({ skipPreflight: true });
     });

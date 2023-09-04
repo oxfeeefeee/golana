@@ -60,10 +60,6 @@ describe("helloworld", async () => {
                     userAccount: userAccount.publicKey,
                     systemProgram: SystemProgram.programId,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
-                ])
                 .signers([payer, userAccount]) 
                 .rpc();
             
@@ -77,10 +73,6 @@ describe("helloworld", async () => {
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
-                ])
                 .signers([payer])
                 .rpc({ skipPreflight: true });
         });
@@ -91,10 +83,6 @@ describe("helloworld", async () => {
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 })
-                ])
                 .signers([payer])
                 .rpc();
         });

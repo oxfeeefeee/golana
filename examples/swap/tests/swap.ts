@@ -196,10 +196,6 @@ describe("swap", async () => {
                     tokenProgram: TOKEN_PROGRAM_ID,
                     rent: SYSVAR_RENT_PUBKEY,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
                 .signers([creator, vaultA, vaultB])
                 .rpc({ skipPreflight: true });
 
@@ -230,10 +226,6 @@ describe("swap", async () => {
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
                 .signers([depositor])
                 .rpc({ skipPreflight: true });
 
@@ -267,10 +259,6 @@ describe("swap", async () => {
                     poolInfo: infoAccount.publicKey,
                     tokenProgram: TOKEN_PROGRAM_ID,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
                 .signers([trader])
                 .rpc({ skipPreflight: true });
 
@@ -296,10 +284,6 @@ describe("swap", async () => {
                     poolInfo: infoAccount.publicKey,
                     tokenProgram: TOKEN_PROGRAM_ID,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
                 .signers([depositor])
                 .rpc({ skipPreflight: true });
 
@@ -328,10 +312,6 @@ describe("swap", async () => {
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
                 })
-                .preInstructions([
-                    ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 }),
-                    ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                ])
                 .signers([creator])
                 .rpc({ skipPreflight: true });
         });

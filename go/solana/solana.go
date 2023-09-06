@@ -4,18 +4,31 @@ import (
 	"unsafe"
 )
 
+// The address of a Solana Account, it's either coressponding to a private key
+// or another account (program) plus a SeedBump
 type PublicKey [32]uint8
 
+// The SeedBump is used to identify a PDA (Program Derived Address)
+// together with the Program's PublicKey
 type SeedBump struct {
 	Seed string
 	Bump uint8
 }
 
+// The Solana Account, represented by a index in the Golana runtime
 type Account uint
 
+// The Solana Program is a kind of Account
+type Program Account
+
 // Initializes a new Account by calling the solana runtime createAccount function
-func (account Account) Create(from Account, space uint64, signerSeeds []SeedBump) error {
-	p := solFfi.account_create(from, account, space, signerSeeds)
+// payer (account:"mut, signer"): pays for the lamports
+// space: the space required for the account
+// signerSeeds: used when the singers are PDAs, pass nil if no signer is PDA
+// Required Program(s):
+//   - SystemProgram
+func (account Account) Create(payer Account, space uint64, signerSeeds []SeedBump) error {
+	p := solFfi.account_create(payer, account, space, signerSeeds)
 	return NewSolanaError(p)
 }
 
@@ -59,32 +72,39 @@ func (account Account) RentEpoch() uint64 {
 	return solFfi.account_rent_epoch(account)
 }
 
+// The Instruction interface, can only be returned by the GetIx function
 type Ix interface {
 	Process()
 }
 
+// Returns the current instruction
 func GetIx() Ix {
 	return solFfi.get_ix()
 }
 
+// Returns the current program id
 func GetId() *PublicKey {
 	return solFfi.get_id()
 }
 
+// Panics if the error is not nil
 func AbortOnError(e error) {
 	if e != nil {
 		panic(e.Error())
 	}
 }
 
+// Log the remaining compute unit
 func LogComputeUnit() {
 	solFfi.log_compute_unit()
 }
 
+// Find a valid "program derived address"(PDA) and its corresponding bump seed.
 func FindProgramAddress(seed string, pk *PublicKey) (*PublicKey, uint8) {
 	return solFfi.find_program_address(seed, pk)
 }
 
+// For internal use only
 type SolanaError struct {
 	ptr unsafe.Pointer
 }

@@ -25,7 +25,7 @@ type IxWithdraw struct {
 	// The pool account storing the pool data
 	poolInfo Account
 
-	tokenProgram Account
+	tokenProgram Program
 
 	// The amount of token A/B to deposit
 	amount        uint64

@@ -11,7 +11,7 @@ name = "{0}"
 space = 30000
 cache_space = 300000
 out_dir = "./target"
-provider = "localnet"
+provider = "testnet"
 
 [providers.localnet]
 cluster = "http://localhost:8899"

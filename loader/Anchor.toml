@@ -2,17 +2,6 @@
 seeds = false
 skip-lint = false
 
-[programs.devnet]
-loader = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
-
-
-[programs.testnet]
-loader = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
-
-
-[programs.localnet]
-loader = "6ZjLk7jSFVVb2rxeoRf4ex3Q7zECi5SRTV4HbX55nNdP"
-
 [registry]
 url = "https://api.apr.dev"
 

@@ -1,6 +1,6 @@
 import { IDL, Helloworld } from '../target/helloworld_idl.js';
 import { Program, initFromEnv } from "golana";
-import { ComputeBudgetProgram, Keypair, SystemProgram, Transaction } from '@solana/web3.js';
+import { Keypair, SystemProgram, Transaction } from '@solana/web3.js';
 import BN from 'bn.js';
 
 describe("helloworld", async () => {
@@ -9,12 +9,8 @@ describe("helloworld", async () => {
 
         const hello = await Program.create<Helloworld>(IDL, provider.publicKey);
 
-        const userAccountSpace = 512;
         const userAccount = Keypair.generate();
         const payer = Keypair.generate();
-
-        console.log(payer.publicKey)
-        console.log(userAccount.publicKey)
 
         it("Initialize program state", async () => {
             // Airdropping tokens to a payer.
@@ -26,6 +22,7 @@ describe("helloworld", async () => {
                 signature: airdrop,
             });
 
+        //    const userAccountSpace = 512;
         //    const userAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(userAccountSpace);
 
         //     // Create the user account
@@ -74,7 +71,7 @@ describe("helloworld", async () => {
                     userAccount: userAccount.publicKey,
                 })
                 .signers([payer])
-                .rpc({ skipPreflight: true });
+                .rpc();
         });
 
         it("IxGreet2", async () => {

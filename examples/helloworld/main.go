@@ -11,29 +11,34 @@ type IxInit struct {
 	// Use tags to specify the account attributes:
 	// - `account:"signer"` for the accounts that are used as signer
 	// - `account:"mut"` for the accounts that are used as writable
-	user          Account `account:"mut, signer"`
-	userAccount   Account `account:"mut, signer" data:"userData"`
-	systemProgram Account
+	// - `account:"mut, signer` for the accounts that are used as signer and writable
+	// If you need to access the account data, add the `data:"accountData"` tag to the field
+	// where `accountData` is a type name you defined in this package
 
-	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
-	// Use the corresponding account name with a _data suffix,
-	// and add the `account_data:"readonly"`,  `account_data:"init"` or `account_data:"mut"` tag to the field:
-	// - `account_data:"readonly"` for the data that will be readonly
-	// - `account_data:"init"` for the data that will be initialized by the instruction
-	// - `account_data:"mut"` for the data that will be written by the instruction
-	//userAccount_data *userData `account_data:"init"`
+	// The user's "main" account
+	user Account `account:"mut, signer"`
+	// The account to be created to store the user's data on chain
+	userAccount Account `account:"mut, signer" data:"userData"`
 
-	// Finally, list all the instruction parameters
+	// The system program account is used to create the userAccount
+	systemProgram Program
+
+	// Then, list all the instruction parameters
+	// Set the initialCount of the greet greater than 0 to cheat
 	initialCount uint64
 }
 
 type userData struct {
-	auth       PublicKey
+	// Save the Pubkey of the user, so that it won't greet to other users
+	auth PublicKey
+	// How many times the user has been greeted
 	greetCount uint64
 }
 
 // This is the business logic of the IxInit
 func (ix *IxInit) Process() {
+	// On the client side, the userAccount is just a newly generated keypair
+	// we now initialize it on chain
 	ix.userAccount.Create(ix.user, 512, nil)
 
 	data := new(userData)
@@ -47,9 +52,8 @@ type IxGreet struct {
 	user        Account `account:"signer"`
 	userAccount Account `account:"mut" data:"userData"`
 
-	//userAccount_data *userData `account_data:"mut"`
-
-	names     []string
+	names []string
+	// This is just to demo array support
 	arrayTest [3]int64
 }
 

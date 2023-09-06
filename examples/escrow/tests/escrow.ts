@@ -1,7 +1,7 @@
 import dns from "node:dns";
 import { IDL, Escrow } from '../target/escrow_idl.js';
 import { Program, initFromEnv } from "golana";
-import { PublicKey, SystemProgram, Transaction, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram, Keypair } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, Keypair } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, createAccount, mintTo, getAccount } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";
@@ -167,7 +167,6 @@ describe("escrow", async () => {
           initializerReceiveTokenAccount: initializerTokenAccountB,
           escrowAccount: escrowAccount.publicKey,
           systemProgram: SystemProgram.programId,
-          rent: SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID
         })
         .signers([initializerMainAccount])

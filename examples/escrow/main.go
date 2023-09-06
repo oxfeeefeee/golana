@@ -22,27 +22,17 @@ type EscrowAccountData struct {
 // This is the definition of the Init Instruction
 type IxInit struct {
 	// First, list all the accounts that are used by the instruction
-	// Use tags to specify the account attributes:
-	// - `golana:"signer"` for the accounts that are used as signer
-	// - `golana:"mut"` for the accounts that are used as writable
 	initializer                    Account `account:"mut, signer"`
 	mint                           Account
 	vaultAccount                   Account `account:"mut"`
 	initializerDepositTokenAccount Account `account:"mut"`
 	initializerReceiveTokenAccount Account
 	escrowAccount                  Account `account:"mut" data:"EscrowAccountData"`
-	systemProgram                  Account
-	rent                           Account
-	tokenProgram                   Account
 
-	// Second, declare the data stored in the accounts, that needs to be read or written by the instruction
-	// Use the corresponding account name with a _data suffix,
-	// and add the `golana:"init"` or `golana:"mut"` tag to the field:
-	// - `golana:"init"` for the data that will be initialized by the instruction
-	// - `golana:"mut"` for the data that will be written by the instruction
-	// escrowAccount_data *EscrowAccountData `golana:"init"`
+	systemProgram Program
+	tokenProgram  Program
 
-	// Finally, list all the instruction parameters
+	// Then, list all the instruction parameters
 	vaultAccountBump  uint8
 	initializerAmount uint64
 	takerAmount       uint64
@@ -85,14 +75,15 @@ type IxExchange struct {
 	escrowAccount                  Account `account:"mut" data:"EscrowAccountData"`
 	vaultAccount                   Account `account:"mut"`
 	vaultAuthority                 Account
-	tokenProgram                   Account
+
+	tokenProgram Program
 
 	escrowBump uint8
 }
 
 func (ix *IxExchange) Process() {
-	// assert is a built-in function added by the Goscript compiler
 	data := ix.escrowAccount.Data().(*EscrowAccountData)
+	// assert is a built-in function added by the Goscript compiler
 	assert(*ix.initializer.Key() == data.initializerKey)
 	assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount)
 	assert(*ix.initializerReceiveTokenAccount.Key() == data.initializerReceiveTokenAccount)
@@ -123,7 +114,8 @@ type IxCancel struct {
 	vaultAccount                   Account `account:"mut"`
 	vaultAuthority                 Account
 	escrowAccount                  Account `account:"mut" data:"EscrowAccountData"`
-	tokenProgram                   Account
+
+	tokenProgram Program
 
 	escrowBump uint8
 }
@@ -133,7 +125,6 @@ func (ix *IxCancel) Process() {
 	assert(*ix.initializer.Key() == data.initializerKey)
 	assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount)
 
-	//_, bump := FindProgramAddress(ESCROW_PDA_SEED, GetId())
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 
 	AbortOnError(token.Transfer(

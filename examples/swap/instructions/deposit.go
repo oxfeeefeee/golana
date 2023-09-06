@@ -25,9 +25,9 @@ type IxDeposit struct {
 	// The pool account storing the pool data
 	poolInfo Account `data:"poolData"`
 
-	systemProgram          Account
-	tokenProgram           Account
-	associatedTokenProgram Account
+	systemProgram          Program
+	tokenProgram           Program
+	associatedTokenProgram Program
 
 	// The amount of token A/B to deposit
 	amountA      uint64
@@ -43,8 +43,9 @@ func (ix *IxDeposit) Process() {
 		ix.depositor,
 		ix.mintLiquidity,
 		ix.systemProgram,
-		ix.associatedTokenProgram,
+		ix.tokenProgram,
 		true,
+		nil,
 	))
 
 	// Calculate numbers

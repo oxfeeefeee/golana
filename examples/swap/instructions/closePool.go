@@ -13,9 +13,10 @@ type IxClosePool struct {
 	tokenBVault    Account `account:"mut"`
 	vaultAuthority Account
 	// The pool account storing the pool data
-	poolInfo      Account `account:"mut"`
-	systemProgram Account
-	tokenProgram  Account
+	poolInfo Account `account:"mut"`
+
+	systemProgram Program
+	tokenProgram  Program
 
 	authBump uint8
 }

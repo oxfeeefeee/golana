@@ -43,6 +43,7 @@ impl IxMeta {
         name: &str,
         gos_meta: types::Meta,
         account: &types::Meta,
+        program: &types::Meta,
         pkg: &types::PackageObj,
         metas: &types::MetadataObjs,
     ) -> Result<IxMeta> {
@@ -71,7 +72,7 @@ impl IxMeta {
             let (is_signer, is_mut) = Self::is_signer_or_mut(account_tag);
             let data_tag = &fields[i].lookup_tag("data");
             let data_meta = Self::get_data_type(data_tag, pkg)?;
-            if meta.key == account.key {
+            if meta.key == account.key || meta.key == program.key {
                 if meta.ptr_depth != 0 {
                     return Err(error!(GolError::PointerAccount));
                 }
@@ -146,7 +147,8 @@ pub struct TxMeta {
 }
 
 pub fn check(bc: &Bytecode) -> Result<TxMeta> {
-    let account_meta = get_account_meta(bc).ok_or(error!(GolError::MetaNotFound))?;
+    let account_meta = get_solana_type_meta(bc, "Account").ok_or(error!(GolError::MetaNotFound))?;
+    let program_meta = get_solana_type_meta(bc, "Program").ok_or(error!(GolError::MetaNotFound))?;
 
     let mut iface_meta = None;
     let mut ix_details = Vec::new();
@@ -172,7 +174,16 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
 
     let instructions = ix_details
         .into_iter()
-        .map(|(name, meta, pkg)| IxMeta::new(name, meta, &account_meta, pkg, &bc.objects.metas))
+        .map(|(name, meta, pkg)| {
+            IxMeta::new(
+                name,
+                meta,
+                &account_meta,
+                &program_meta,
+                pkg,
+                &bc.objects.metas,
+            )
+        })
         .collect::<Result<Vec<IxMeta>>>()?;
     Ok(TxMeta {
         iface_meta: iface_meta.unwrap(),
@@ -180,7 +191,7 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
     })
 }
 
-fn get_account_meta(bc: &Bytecode) -> Option<types::Meta> {
+fn get_solana_type_meta(bc: &Bytecode, name: &str) -> Option<types::Meta> {
     let key = bc
         .objects
         .packages
@@ -189,7 +200,7 @@ fn get_account_meta(bc: &Bytecode) -> Option<types::Meta> {
         .find(|(_, pkg)| pkg.name() == "solana")
         .map(|(i, _)| i.into())?;
     let pkg = &bc.objects.packages[key];
-    let account = pkg.member(*pkg.member_index("Account")?);
+    let account = pkg.member(*pkg.member_index(name)?);
     match account.typ() {
         types::ValueType::Metadata => Some(account.as_metadata().clone()),
         _ => None,

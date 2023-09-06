@@ -26,10 +26,10 @@ type IxCreatePool struct {
 	tokenAVault Account `account:"mut, signer"`
 	tokenBVault Account `account:"mut, signer"`
 	// The pool account storing the pool data
-	poolInfo      Account `account:"mut" data:"poolData"`
-	systemProgram Account
-	tokenProgram  Account
-	rent          Account
+	poolInfo Account `account:"mut" data:"poolData"`
+
+	systemProgram Program
+	tokenProgram  Program
 
 	// The minimum liquidity to deposit, liquidity  = sqrt(amountA * amountB)
 	minLiquidity uint64

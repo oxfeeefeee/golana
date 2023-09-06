@@ -16,7 +16,7 @@ type ffiSolana interface {
 
 	get_id() *PublicKey
 
-	account_create(from, account Account, space uint64, signerSeeds []SeedBump) unsafe.Pointer
+	account_create(payer, account Account, space uint64, signerSeeds []SeedBump) unsafe.Pointer
 
 	account_key(account Account) *PublicKey
 

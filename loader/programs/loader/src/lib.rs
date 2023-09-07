@@ -27,8 +27,8 @@ enum FinalizeStep {
     Check,
 }
 
-impl From<usize> for FinalizeStep {
-    fn from(i: usize) -> Self {
+impl From<u32> for FinalizeStep {
+    fn from(i: u32) -> Self {
         match i {
             0 => Self::Init,
             1 => Self::DeserialMetas,
@@ -117,7 +117,7 @@ pub mod loader {
         Ok(())
     }
 
-    pub fn gol_finalize(ctx: Context<GolFinalize>, step_num: usize) -> Result<()> {
+    pub fn gol_finalize(ctx: Context<GolFinalize>, step_num: u32) -> Result<()> {
         let mem_dump = &mut ctx.accounts.mem_dump.load_mut()?;
         let step: FinalizeStep = step_num.into();
         if step == FinalizeStep::Init {
@@ -309,7 +309,7 @@ pub struct GolWrite<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(step: usize)]
+#[instruction(step: u32)]
 pub struct GolFinalize<'info> {
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority)]
@@ -340,7 +340,8 @@ pub struct GolMemoryDump {
     pub meta_ptr: usize,
     pub bc_ptr: usize,
     // Below are temporary fields for deserializing the bytecode.
-    pub finished_steps: usize,
+    pub finished_steps: u32,
+    _padding: u32,
     pub data_offset: usize,
     pub meta_objs_ptr: usize,
     pub func_objs_ptr: usize,

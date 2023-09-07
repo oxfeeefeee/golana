@@ -20,10 +20,13 @@ type IxInit struct {
 	// The account to be created to store the user's data on chain
 	userAccount Account `account:"mut, signer" data:"userData"`
 
+	// Then, list all the programs that are used by the instruction
+	// programs are a kind of accounts, but they usually don't get directly referenced in
+	// your code. All the programs required by the APIs you use must be listed here.
 	// The system program account is used to create the userAccount
 	systemProgram Program
 
-	// Then, list all the instruction parameters
+	// Finally, list all the instruction parameters
 	// Set the initialCount of the greet greater than 0 to cheat
 	initialCount uint64
 }

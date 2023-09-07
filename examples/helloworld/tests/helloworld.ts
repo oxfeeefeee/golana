@@ -1,6 +1,6 @@
 import { IDL, Helloworld } from '../target/helloworld_idl.js';
 import { Program, initFromEnv } from "golana";
-import { Keypair, SystemProgram, Transaction } from '@solana/web3.js';
+import { Keypair, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 
 describe("helloworld", async () => {

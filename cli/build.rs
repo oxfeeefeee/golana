@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Seek, Write};
@@ -11,18 +12,29 @@ use zip::write::FileOptions;
 const GO_LIB_DIR: &str = "./go";
 const GO_LIB_ZIP: &str = "go_lib.zip";
 
+#[cfg(windows)]
+const HOST_FAMILY: &str = "windows";
+
+#[cfg(unix)]
+const HOST_FAMILY: &str = "unix";
+
 fn main() {
     let cwd = std::env::current_dir().unwrap();
     println!("Running cli/build.rs from {}", cwd.display());
     println!("cargo:rerun-if-changed={}", GO_LIB_DIR);
 
-    let dest_path = Path::new(&cwd).join(GO_LIB_ZIP);
+    #[cfg(any(windows, unix))]
+    {
+        println!("cargo:rust-cfg=host_family={}", HOST_FAMILY);
+    }
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join(GO_LIB_ZIP);
     println!(
         "Packing files from {} to {}",
         GO_LIB_DIR,
         dest_path.display()
     );
-
     zip_go_lib(Path::new(GO_LIB_DIR), &dest_path).unwrap();
 }
 

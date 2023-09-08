@@ -3,12 +3,27 @@ use anyhow::{anyhow, Context, Result};
 use borsh::ser::BorshSerialize;
 use go_engine as gos;
 use golana;
+use std::env;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+#[cfg(host_family = "windows")]
+macro_rules! PATH_SEPARATOR {
+    () => {
+        r"\"
+    };
+}
+#[cfg(not(host_family = "windows"))]
+macro_rules! PATH_SEPARATOR {
+    () => {
+        r"/"
+    };
+}
+
 pub fn build(out_name: Option<&str>, out_dir: &Path, proj_name: &str) -> Result<()> {
     let out_name = out_name.unwrap_or(proj_name);
-    let bytes = include_bytes!("../go_lib.zip");
+
+    let bytes = include_bytes!(concat!(env!("OUT_DIR"), PATH_SEPARATOR!(), "go_lib.zip"));
     let reader = gos::SourceReader::zip_lib_and_local_fs(
         std::borrow::Cow::Borrowed(bytes),
         PathBuf::from("./"),

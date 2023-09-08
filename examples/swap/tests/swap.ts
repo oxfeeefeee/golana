@@ -1,6 +1,6 @@
 import { IDL, Swap } from '../target/swap_idl.js';
 import { Program, initFromEnv } from "golana";
-import {  Keypair, SystemProgram, Transaction, PublicKey, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+import {  Keypair, SystemProgram, Transaction, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";

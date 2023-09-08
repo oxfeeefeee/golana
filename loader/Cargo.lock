@@ -951,14 +951,18 @@ dependencies = [
 
 [[package]]
 name = "go-parser"
-version = "0.1.1"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0cbfbe21b19b73f35845c32750460937647c722b19047ba690184591583836a6"
 dependencies = [
  "borsh 0.10.3",
 ]
 
 [[package]]
 name = "go-pmacro"
-version = "0.1.0"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e8f00eb35012c1bd1a1ec2b9ded7d4438c54088168252aa0d5ef1e6e363442a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -967,7 +971,9 @@ dependencies = [
 
 [[package]]
 name = "go-vm"
-version = "0.1.3"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b75fcdb2711217023fdada49b362b12b4529289cf72844613a36029d1cd54c55"
 dependencies = [
  "borsh 0.10.3",
  "go-parser",

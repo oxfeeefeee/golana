@@ -1648,6 +1648,8 @@ dependencies = [
 [[package]]
 name = "go-codegen"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f5771ebefb29dbd272be1b6f9ef6a36ea300c86214b51b32efa15e2d7a11781"
 dependencies = [
  "go-parser",
  "go-types",
@@ -1657,6 +1659,8 @@ dependencies = [
 [[package]]
 name = "go-engine"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6501c9c0d2b84788118a793378cf71666bfb6dd69cd68a69d1ce21a3c04d93ac"
 dependencies = [
  "borsh 0.10.3",
  "futures-lite",
@@ -1671,14 +1675,18 @@ dependencies = [
 
 [[package]]
 name = "go-parser"
-version = "0.1.1"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0cbfbe21b19b73f35845c32750460937647c722b19047ba690184591583836a6"
 dependencies = [
  "borsh 0.10.3",
 ]
 
 [[package]]
 name = "go-pmacro"
-version = "0.1.0"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e8f00eb35012c1bd1a1ec2b9ded7d4438c54088168252aa0d5ef1e6e363442a"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
@@ -1687,7 +1695,9 @@ dependencies = [
 
 [[package]]
 name = "go-types"
-version = "0.1.2"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "461f6ad174a1b0926f31414a41483181ae22667c917351de75822fb92e8ea3f1"
 dependencies = [
  "go-parser",
  "num-bigint 0.4.3",
@@ -1698,7 +1708,9 @@ dependencies = [
 
 [[package]]
 name = "go-vm"
-version = "0.1.3"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b75fcdb2711217023fdada49b362b12b4529289cf72844613a36029d1cd54c55"
 dependencies = [
  "borsh 0.10.3",
  "go-parser",
@@ -1728,6 +1740,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "golana"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aaa2443e6149a7e72e84070815e375499c93cebd91c4c4cd604ac8763b46e400"
+dependencies = [
+ "anchor-lang",
+ "borsh 0.10.3",
+ "go-vm",
+ "solana-program",
+]
+
+[[package]]
 name = "golana-cli"
 version = "0.1.1"
 dependencies = [
@@ -1739,7 +1763,7 @@ dependencies = [
  "dirs 3.0.2",
  "go-engine",
  "go-vm",
- "golana",
+ "golana 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "golana-loader",
  "heck 0.3.3",
  "serde",
@@ -1755,13 +1779,15 @@ dependencies = [
 [[package]]
 name = "golana-loader"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bce8920addc9820cc1753c24d01bf2669594e1c9f4c5e74365e49d044f358535"
 dependencies = [
  "anchor-lang",
  "anyhow",
  "borsh 0.10.3",
  "bytemuck",
  "go-vm",
- "golana",
+ "golana 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "smalloc",
  "solana-program",
  "spl-associated-token-account 2.0.0",

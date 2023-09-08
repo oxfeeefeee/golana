@@ -30,8 +30,8 @@ bytemuck = { version = "1.4.0", features = ["derive", "min_const_generics"]}
 
 [dependencies.go-vm] 
 features = ["btree_map", "serde_borsh", "instruction_pos"]
-version = "0.1.3"
-path = "../../../../goscript/vm"
+version = "0.1.4"
+#path = "../../../../goscript/vm"
 
 [dependencies.smalloc] 
 version = "0.1.2"

@@ -89,10 +89,10 @@ where
         let mut fields = vec![];
         for (i, acc_meta) in self.ix_meta.accounts.iter().enumerate() {
             let account = &self.accounts[i];
-            if acc_meta.is_signer != account.is_signer {
+            if acc_meta.is_signer && !account.is_signer {
                 return Err(error!(GolError::RtCheckSigner));
             }
-            if acc_meta.is_mut != account.is_writable {
+            if acc_meta.is_mut && !account.is_writable {
                 return Err(error!(GolError::RtCheckMutable));
             }
             fields.push(i.into());

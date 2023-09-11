@@ -1,8 +1,6 @@
 use anchor_syn::idl::Idl;
 use anyhow::Result;
-use dirs;
 use heck::{CamelCase, MixedCase};
-use std::path::PathBuf;
 
 pub fn golana_toml(name: &str) -> String {
     format!(
@@ -106,13 +104,7 @@ func main() {
 }
 
 fn get_wallet_path() -> String {
-    let home_dir = dirs::home_dir().unwrap_or_else(|| {
-        println!("$HOME doesn't exist");
-        PathBuf::from(".")
-    });
-    let mut wallet_path = home_dir.to_str().unwrap().to_string();
-    wallet_path.push_str("/.config/solana/id.json");
-    wallet_path
+    "~/.config/solana/id.json".to_owned()
 }
 
 // Taken from anchor-syn/src/idl.rs

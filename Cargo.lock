@@ -1731,7 +1731,7 @@ dependencies = [
 
 [[package]]
 name = "golana"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.3",
@@ -1741,9 +1741,9 @@ dependencies = [
 
 [[package]]
 name = "golana"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aaa2443e6149a7e72e84070815e375499c93cebd91c4c4cd604ac8763b46e400"
+checksum = "b7f4eca1c127f46bde572d91d9a44a2a7e7bedf0dce8a7b914aa4d1a442d0b93"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.3",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "golana-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anchor-client",
  "anchor-syn",
@@ -1763,7 +1763,7 @@ dependencies = [
  "dirs 3.0.2",
  "go-engine",
  "go-vm",
- "golana 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "golana 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "golana-loader",
  "heck 0.3.3",
  "serde",
@@ -1778,16 +1778,16 @@ dependencies = [
 
 [[package]]
 name = "golana-loader"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bce8920addc9820cc1753c24d01bf2669594e1c9f4c5e74365e49d044f358535"
+checksum = "856e14c49c98a09eb8c002156a16b06951c3b1b29cdb5a6dad5704397758524f"
 dependencies = [
  "anchor-lang",
  "anyhow",
  "borsh 0.10.3",
  "bytemuck",
  "go-vm",
- "golana 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "golana 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "smalloc",
  "solana-program",
  "spl-associated-token-account 2.0.0",

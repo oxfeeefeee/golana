@@ -1,6 +1,6 @@
 [package]
 name = "golana-cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/oxfeeefeee/golana/"
@@ -41,11 +41,11 @@ version = "0.1.4"
 
 [dependencies.golana] 
 #path = "../golana" 
-version = "0.1.1"
+version = "0.1.2"
 
 [dependencies.golana-loader] 
 #path = "../loader/programs/loader" 
-version = "0.1.1"
+version = "0.1.2"
 
 
 [build-dependencies]

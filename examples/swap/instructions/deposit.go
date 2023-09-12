@@ -37,7 +37,9 @@ type IxDeposit struct {
 
 func (ix *IxDeposit) Process() {
 	data := ix.poolInfo.Data().(*poolData)
-	assert(data.lpMint == *ix.lpMint.Key())
+	Assert(data.lpMint == *ix.lpMint.Key(), "")
+	Assert(data.tokenAVault == *ix.tokenAVault.Key(), "")
+	Assert(data.tokenBVault == *ix.tokenBVault.Key(), "")
 
 	// Create the liquidity token account as associated account if not exists
 	AbortOnError(token.CreateAssociatedAccount(

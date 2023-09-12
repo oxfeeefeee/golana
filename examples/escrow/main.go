@@ -83,10 +83,9 @@ type IxExchange struct {
 
 func (ix *IxExchange) Process() {
 	data := ix.escrowAccount.Data().(*EscrowAccountData)
-	// assert is a built-in function added by the Goscript compiler
-	assert(*ix.initializer.Key() == data.initializerKey)
-	assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount)
-	assert(*ix.initializerReceiveTokenAccount.Key() == data.initializerReceiveTokenAccount)
+	Assert(*ix.initializer.Key() == data.initializerKey, "")
+	Assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount, "")
+	Assert(*ix.initializerReceiveTokenAccount.Key() == data.initializerReceiveTokenAccount, "")
 
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 	AbortOnError(token.Transfer(
@@ -122,8 +121,8 @@ type IxCancel struct {
 
 func (ix *IxCancel) Process() {
 	data := ix.escrowAccount.Data().(*EscrowAccountData)
-	assert(*ix.initializer.Key() == data.initializerKey)
-	assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount)
+	Assert(*ix.initializer.Key() == data.initializerKey, "")
+	Assert(*ix.initializerDepositTokenAccount.Key() == data.initializerDepositTokenAccount, "")
 
 	authority_seeds := []SeedBump{{ESCROW_PDA_SEED, ix.escrowBump}}
 

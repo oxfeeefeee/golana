@@ -17,7 +17,7 @@ type IxTrade struct {
 	tokenBVault    Account `account:"mut"`
 	vaultAuthority Account
 	// The pool account storing the pool data
-	poolInfo Account
+	poolInfo Account `data:"poolData"`
 
 	tokenProgram Program
 
@@ -28,6 +28,10 @@ type IxTrade struct {
 }
 
 func (ix *IxTrade) Process() {
+	data := ix.poolInfo.Data().(*poolData)
+	Assert(data.tokenAVault == *ix.tokenAVault.Key(), "")
+	Assert(data.tokenBVault == *ix.tokenBVault.Key(), "")
+
 	vaultA, err := token.UnpackAccount(ix.tokenAVault)
 	AbortOnError(err)
 	vaultB, err := token.UnpackAccount(ix.tokenBVault)

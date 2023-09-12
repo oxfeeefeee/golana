@@ -67,7 +67,7 @@ type IxGreet struct {
 func (ix *IxGreet) Process() {
 	data := ix.userAccount.Data().(*userData)
 	// Check that the user is the auth of the userAccount
-	assert(*ix.user.Key() == data.auth)
+	Assert(*ix.user.Key() == data.auth, "Unauthorized")
 
 	fmt2.Println("Hello", ix.names, "you have been greeted", data.greetCount, "times", "arrayTest", ix.arrayTest, "bufferTest", ix.buffer, "pk", ix.pk)
 

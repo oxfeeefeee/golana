@@ -17,6 +17,7 @@ describe("swap", async () => {
         const mintAuthority = Keypair.generate();
         const vaultA = Keypair.generate();
         const vaultB = Keypair.generate();
+        const mintLP = Keypair.generate();
 
         const creator = Keypair.generate();
         const depositor = Keypair.generate();
@@ -31,7 +32,7 @@ describe("swap", async () => {
 
         let mintA: PublicKey;
         let mintB: PublicKey;
-        let mintLP: PublicKey;
+        
 
         let vault_authority_pda: PublicKey;
         let vault_authority_bump: number;
@@ -94,12 +95,13 @@ describe("swap", async () => {
                 15
             );
 
-            mintLP = await createMint(
+            await createMint(
                 provider.connection,
                 creator,
                 lp_token_mint_auth_pda,
                 null,
-                15
+                15,
+                mintLP
             );
 
             depositorTokenAccountA = await getOrCreateAssociatedTokenAccount(
@@ -117,7 +119,7 @@ describe("swap", async () => {
             depositorTokenAccountLP = await getOrCreateAssociatedTokenAccount(
                 provider.connection,
                 depositor,
-                mintLP,
+                mintLP.publicKey,
                 depositor.publicKey,
             );
 
@@ -184,7 +186,7 @@ describe("swap", async () => {
 
         it("IxCreatePool", async () => {
             await swap.methods
-                .IxCreatePool(mintLP, new BN(10000), new BN(100))
+                .IxCreatePool(mintLP.publicKey, new BN(10000), new BN(100))
                 .accounts({
                     creator: creator.publicKey,
                     mintA: mintA,
@@ -212,7 +214,7 @@ describe("swap", async () => {
                 .IxDeposit(new BN(100000), new BN(400000), lp_token_mint_auth_bump)
                 .accounts({
                     depositor: depositor.publicKey,
-                    lpMint: mintLP,
+                    lpMint: mintLP.publicKey,
                     lpMintAuth: lp_token_mint_auth_pda,
                     tokenA: depositorTokenAccountA.address,
                     tokenB: depositorTokenAccountB.address,
@@ -272,7 +274,7 @@ describe("swap", async () => {
                 .IxWithdraw(new BN(100000), vault_authority_bump)
                 .accounts({
                     depositor: depositor.publicKey,
-                    lpMint: mintLP,
+                    lpMint: mintLP.publicKey,
                     tokenA: depositorTokenAccountA.address,
                     tokenB: depositorTokenAccountB.address,
                     tokenLiquidity: depositorTokenAccountLP.address,

@@ -82,7 +82,7 @@ func GetIx() Ix {
 	return solFfi.get_ix()
 }
 
-// Returns the current program id
+// Returns the current program id, i.e. bytecode PubKey
 func GetId() *PublicKey {
 	return solFfi.get_id()
 }
@@ -91,6 +91,13 @@ func GetId() *PublicKey {
 func AbortOnError(e error) {
 	if e != nil {
 		panic(e.Error())
+	}
+}
+
+// Panics if the condition is not true
+func Assert(cond bool, msg string) {
+	if !cond {
+		panic(msg)
 	}
 }
 

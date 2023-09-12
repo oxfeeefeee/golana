@@ -1,6 +1,6 @@
 import { IDL, Helloworld } from '../target/helloworld_idl.js';
 import { Program, initFromEnv } from "golana";
-import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import { Keypair, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 
 describe("helloworld", async () => {
@@ -49,7 +49,7 @@ describe("helloworld", async () => {
         });
 
         it("IxInit", async () => {
-            const trans = await hello.methods.IxInit(
+            await hello.methods.IxInit(
                 new BN(666),
             )
                 .accounts({
@@ -59,9 +59,6 @@ describe("helloworld", async () => {
                 })
                 .signers([payer, userAccount]) 
                 .rpc();
-            
-            // const result = await provider.connection.getTransaction(trans);
-            // console.log(result)
         });
 
         it("IxGreet", async () => {

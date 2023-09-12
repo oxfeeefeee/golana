@@ -33,7 +33,9 @@ type IxWithdraw struct {
 
 func (ix *IxWithdraw) Process() {
 	data := ix.poolInfo.Data().(*poolData)
-	assert(data.lpMint == *ix.lpMint.Key())
+	Assert(data.lpMint == *ix.lpMint.Key(), "")
+	Assert(data.tokenAVault == *ix.tokenAVault.Key(), "")
+	Assert(data.tokenBVault == *ix.tokenBVault.Key(), "")
 
 	liq, err := token.UnpackAccount(ix.tokenLiquidity)
 	AbortOnError(err)

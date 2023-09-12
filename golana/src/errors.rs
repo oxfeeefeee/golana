@@ -12,6 +12,8 @@ pub enum GolError {
     MetaNotFound,
     #[msg("Method 'process' for the Ix struct is not found")]
     MethodNotFound,
+    #[msg("The type info of the account data is not found, did you forgot to declare it?")]
+    DataMetaNotFound,
     #[msg("Method 'process' has to have a pointer receiver")]
     NonPointerReceiver,
     #[msg("Account in Ix cannot be a pointer")]

@@ -10,8 +10,8 @@ type IxDeposit struct {
 	// The depositor, i.e. the liquidity provider
 	depositor Account `account:"mut, signer"`
 	// The mint of the liquidity token
-	mintLiquidity Account `account:"mut"`
-	mintLpAuth    Account
+	lpMint     Account `account:"mut"`
+	lpMintAuth Account
 	// depositor's token A/B account
 	tokenA Account `account:"mut"`
 	tokenB Account `account:"mut"`
@@ -36,12 +36,15 @@ type IxDeposit struct {
 }
 
 func (ix *IxDeposit) Process() {
+	data := ix.poolInfo.Data().(*poolData)
+	assert(data.lpMint == *ix.lpMint.Key())
+
 	// Create the liquidity token account as associated account if not exists
 	AbortOnError(token.CreateAssociatedAccount(
 		ix.depositor,
 		ix.tokenLiquidity,
 		ix.depositor,
-		ix.mintLiquidity,
+		ix.lpMint,
 		ix.systemProgram,
 		ix.tokenProgram,
 		true,
@@ -57,7 +60,6 @@ func (ix *IxDeposit) Process() {
 	if vaultA.Amount == 0 && vaultB.Amount == 0 {
 		// This is the first deposit, calculate the initial liquidity
 		liquidity = math2.U64GeometryMean(ix.amountA, ix.amountB)
-		data := ix.poolInfo.Data().(*poolData)
 		if liquidity < data.minLiquidity {
 			panic("liquidity less than minimum")
 		}
@@ -98,9 +100,9 @@ func (ix *IxDeposit) Process() {
 	// Mint the liquidity token to the depositor
 	mintAuthSeedBump := []SeedBump{{LP_MINT_AUTH_PDA_SEED, ix.mintAuthBump}}
 	AbortOnError(token.MintTo(
-		ix.mintLiquidity,
+		ix.lpMint,
 		ix.tokenLiquidity,
-		ix.mintLpAuth,
+		ix.lpMintAuth,
 		liquidity,
 		mintAuthSeedBump,
 	))

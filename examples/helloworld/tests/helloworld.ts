@@ -1,6 +1,6 @@
 import { IDL, Helloworld } from '../target/helloworld_idl.js';
 import { Program, initFromEnv } from "golana";
-import { Keypair, SystemProgram } from '@solana/web3.js';
+import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
 
 describe("helloworld", async () => {
@@ -65,17 +65,17 @@ describe("helloworld", async () => {
         });
 
         it("IxGreet", async () => {
-            await hello.methods.IxGreet(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"], [new BN(666),new BN(666),new BN(666)])
+            await hello.methods.IxGreet(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"], [new BN(666),new BN(666),new BN(666)], Buffer.from("xxx"), payer.publicKey) 
                 .accounts({
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,
                 })
                 .signers([payer])
-                .rpc();
+                .rpc({ skipPreflight: true });
         });
 
         it("IxGreet2", async () => {
-            await hello.methods.IxGreet(["best_chain_dev1", "best_chain_dev2"], [new BN(-666),new BN(-666),new BN(-666)])
+            await hello.methods.IxGreet(["best_chain_dev1", "best_chain_dev2"], [new BN(-666),new BN(-666),new BN(-666)], Buffer.from("xxx2"), payer.publicKey)
                 .accounts({
                     user: payer.publicKey,
                     userAccount: userAccount.publicKey,

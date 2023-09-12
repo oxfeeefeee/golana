@@ -190,7 +190,7 @@ pub fn npm_package() -> String {
             "@project-serum/anchor": "^0.26.0",
             "@solana/web3.js": "^1.78.4",
             "bn.js": "^5.2.1",
-            "golana": "^0.2.10"
+            "golana": "^0.2.11"
         },
         "devDependencies": {
             "@types/bn.js": "^5.1.1",

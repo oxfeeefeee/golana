@@ -42,7 +42,7 @@ pub fn build(out_name: Option<&str>, out_dir: &Path, proj_name: &str) -> Result<
         golana::check(&bc).map_err(|e| anyhow::Error::new(e).context("type check error"))?;
 
     // Generate idl
-    let idl = idl::get_idl(&tx_meta, &bc.objects.metas, proj_name)?;
+    let idl = idl::IdlGen::new(&bc.objects.metas, &tx_meta).gen(proj_name)?;
     let idl_str = serde_json::to_string_pretty(&idl)
         .map_err(|e| anyhow::Error::new(e).context("serialize idl error"))?;
 

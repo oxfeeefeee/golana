@@ -12,6 +12,7 @@ type poolData struct {
 	creator      PublicKey
 	tokenAVault  PublicKey
 	tokenBVault  PublicKey
+	lpMint       PublicKey
 	minLiquidity uint64
 	feeRate      uint64
 }
@@ -31,6 +32,7 @@ type IxCreatePool struct {
 	systemProgram Program
 	tokenProgram  Program
 
+	lpMint PublicKey
 	// The minimum liquidity to deposit, liquidity  = sqrt(amountA * amountB)
 	minLiquidity uint64
 	// The fee rate, in basis points, i.e. 1000 = 10%
@@ -59,6 +61,7 @@ func (ix *IxCreatePool) Process() {
 	data.creator = *ix.creator.Key()
 	data.tokenAVault = *ix.tokenAVault.Key()
 	data.tokenBVault = *ix.tokenBVault.Key()
+	data.lpMint = ix.lpMint
 	data.minLiquidity = ix.minLiquidity
 	data.feeRate = ix.feeRate
 	ix.poolInfo.SaveData(data)

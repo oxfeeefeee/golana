@@ -143,6 +143,7 @@ impl IxMeta {
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct TxMeta {
     pub iface_meta: types::Meta,
+    pub pub_key_meta: types::Meta,
     pub instructions: Vec<IxMeta>,
 }
 
@@ -151,6 +152,7 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
     let program_meta = get_solana_type_meta(bc, "Program").ok_or(error!(GolError::MetaNotFound))?;
 
     let mut iface_meta = None;
+    let mut pub_key_meta = None;
     let mut ix_details = Vec::new();
     for pkg in bc.objects.packages.iter() {
         if pkg.name() == "solana" {
@@ -158,6 +160,10 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
             for (name, index) in pkg.member_indices() {
                 if name == "Ix" && pkg.member(*index).typ() == types::ValueType::Metadata {
                     iface_meta = Some(pkg.member(*index).as_metadata().clone());
+                } else if name == "PublicKey"
+                    && pkg.member(*index).typ() == types::ValueType::Metadata
+                {
+                    pub_key_meta = Some(pkg.member(*index).as_metadata().clone());
                 }
             }
         } else {
@@ -187,6 +193,7 @@ pub fn check(bc: &Bytecode) -> Result<TxMeta> {
         .collect::<Result<Vec<IxMeta>>>()?;
     Ok(TxMeta {
         iface_meta: iface_meta.unwrap(),
+        pub_key_meta: pub_key_meta.unwrap(),
         instructions,
     })
 }

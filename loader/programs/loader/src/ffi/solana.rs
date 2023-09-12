@@ -110,7 +110,7 @@ impl SolanaFfi {
                     })
                     .map_err(Into::into)
             } else {
-                Err(error!(GolError::MethodNotFound)).map_err(Into::into)
+                Err(error!(GolError::DataMetaNotFound)).map_err(Into::into)
             }
         }();
         result.unwrap()
@@ -130,7 +130,7 @@ impl SolanaFfi {
                 let data_obj = ctx.deref_pointer(&data_ptr).unwrap();
                 GosValue::serialize_wo_type(&data_obj, &mut buf).map_err(Into::into)
             } else {
-                Err(error!(GolError::MethodNotFound)).map_err(Into::into)
+                Err(error!(GolError::DataMetaNotFound)).map_err(Into::into)
             }
         }();
         result.unwrap();

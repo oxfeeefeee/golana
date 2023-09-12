@@ -184,7 +184,7 @@ describe("swap", async () => {
 
         it("IxCreatePool", async () => {
             await swap.methods
-                .IxCreatePool(new BN(10000), new BN(100))
+                .IxCreatePool(mintLP, new BN(10000), new BN(100))
                 .accounts({
                     creator: creator.publicKey,
                     mintA: mintA,
@@ -212,8 +212,8 @@ describe("swap", async () => {
                 .IxDeposit(new BN(100000), new BN(400000), lp_token_mint_auth_bump)
                 .accounts({
                     depositor: depositor.publicKey,
-                    mintLiquidity: mintLP,
-                    mintLpAuth: lp_token_mint_auth_pda,
+                    lpMint: mintLP,
+                    lpMintAuth: lp_token_mint_auth_pda,
                     tokenA: depositorTokenAccountA.address,
                     tokenB: depositorTokenAccountB.address,
                     tokenLiquidity: depositorTokenAccountLP.address,
@@ -272,8 +272,7 @@ describe("swap", async () => {
                 .IxWithdraw(new BN(100000), vault_authority_bump)
                 .accounts({
                     depositor: depositor.publicKey,
-                    mintLiquidity: mintLP,
-                    mintLpAuth: lp_token_mint_auth_pda,
+                    lpMint: mintLP,
                     tokenA: depositorTokenAccountA.address,
                     tokenB: depositorTokenAccountB.address,
                     tokenLiquidity: depositorTokenAccountLP.address,

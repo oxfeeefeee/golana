@@ -100,6 +100,7 @@ where
 
         let mut buf: &[u8] = &self.args;
         for arg_meta in self.ix_meta.args.iter() {
+            // todo: type checks
             fields.push(GosValue::deserialize_wo_type(
                 &arg_meta.1,
                 &ctx.vm_objs.metas,

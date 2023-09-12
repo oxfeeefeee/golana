@@ -7,7 +7,9 @@ use anyhow::{anyhow, Result};
 use solana_sdk;
 use std::{path::Path, rc::Rc};
 
-// deploy the project
+/// Deploy the project
+/// The bytecode account PK is Pubkey::create_with_seed(wallet_pk, "BC" + name, loader_id)
+/// The mem_dump account PK is Pubkey::create_with_seed(wallet_pk, "MM" + name, loader_id)
 pub fn deploy(config: &GolanaConfig, bc_path: &Path, force: bool) -> Result<()> {
     let program = new_vm_program(config.get_provider()?)?;
     let rpc_client = program.rpc();

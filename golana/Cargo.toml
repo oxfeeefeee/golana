@@ -1,6 +1,6 @@
 [package]
 name = "golana"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/oxfeeefeee/golana/"
@@ -14,5 +14,5 @@ borsh = "0.10.3"
 
 [dependencies.go-vm] 
 features = ["btree_map", "serde_borsh", "instruction_pos"]
-version = "0.1.4"
+version = "0.1.5"
 #path = "../../goscript/vm"

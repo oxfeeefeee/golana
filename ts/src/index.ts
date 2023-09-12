@@ -178,6 +178,9 @@ export class MethodsBuilder<IDL extends Idl, I extends AllInstructions<IDL>> {
     args.forEach((arg, i) => {
       const type = this._idlIx.args[i].type;
       const schema = getTypeSchema(type);
+      if (type === "publicKey") {
+        arg = (arg as PublicKey).toBytes();
+      }
       buffers.push(borsh.serialize(schema, arg));
     });
     return Buffer.concat(buffers);
@@ -303,16 +306,20 @@ function getTypeSchema(idlType: IdlType): borsh.Schema {
       "u64",
       "i64",
       "f64",
-      "string"
+      "string",
     ].includes(idlType)) {
       return idlType as string;
+    } else if (idlType === "bytes") {
+      return {array:{type: "u8"}};
+    } else if (idlType === "publicKey") {
+      return {array:{type: "u8", len: 32}};
     } else {
       throw new Error(`Not a valid type: ${idlType}`);
     }
   } else if ("vec" in idlType) {
     return {array:{type: idlType.vec as string}};
   } else if ("array" in idlType) {
-    return {array:{type: idlType.array[0] as string, "len": idlType.array[1]}};
+    return {array:{type: idlType.array[0] as string, len: idlType.array[1]}};
   } else {
     throw new Error(`Not a valid type: ${idlType}`);
   }

@@ -58,6 +58,10 @@ type IxGreet struct {
 	names []string
 	// This is just to demo array support
 	arrayTest [3]int64
+
+	buffer []byte
+
+	pk PublicKey
 }
 
 func (ix *IxGreet) Process() {
@@ -65,7 +69,7 @@ func (ix *IxGreet) Process() {
 	// Check that the user is the auth of the userAccount
 	assert(*ix.user.Key() == data.auth)
 
-	fmt2.Println("Hello", ix.names, "you have been greeted", data.greetCount, "times", "arrayTest", ix.arrayTest)
+	fmt2.Println("Hello", ix.names, "you have been greeted", data.greetCount, "times", "arrayTest", ix.arrayTest, "bufferTest", ix.buffer, "pk", ix.pk)
 
 	// Increment the greetCount
 	data.greetCount++

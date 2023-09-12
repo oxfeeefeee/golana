@@ -111,9 +111,9 @@ export type IdlType =
   // | "i128"
   // | "u256"
   // | "i256"
-  // | "bytes"
+  | "bytes"
   | "string"
-  // | "publicKey"
+  | "publicKey"
   // | IdlTypeDefined
   // | IdlTypeOption
   // | IdlTypeCOption

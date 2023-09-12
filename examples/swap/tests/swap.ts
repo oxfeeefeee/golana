@@ -1,6 +1,6 @@
 import { IDL, Swap } from '../target/swap_idl.js';
 import { Program, initFromEnv } from "golana";
-import {  Keypair, SystemProgram, Transaction, PublicKey } from '@solana/web3.js';
+import {  Keypair, SystemProgram, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, createMint, mintTo, getAccount, getOrCreateAssociatedTokenAccount, Account, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from 'bn.js';
 import { assert } from "chai";
@@ -10,8 +10,6 @@ describe("swap", async () => {
         const provider = initFromEnv();
 
         const swap =  await Program.create<Swap>(IDL, provider.publicKey);
-
-        const infoAccountSpace = 512;
 
         const infoAccount = Keypair.generate();
         const mintAuthority = Keypair.generate();
@@ -57,26 +55,6 @@ describe("swap", async () => {
             await provider.connection.confirmTransaction(
                 await provider.connection.requestAirdrop(trader.publicKey, 1000000000),
                 "processed"
-            );
-
-            const infoAccountLamports = await provider.connection.getMinimumBalanceForRentExemption(infoAccountSpace);
-
-            await provider.sendAndConfirm(
-                (() => {
-                    const tx = new Transaction();
-                    tx.add(
-                        SystemProgram.createAccount({
-                            fromPubkey: creator.publicKey,
-                            newAccountPubkey: infoAccount.publicKey,
-                            lamports: infoAccountLamports,
-                            space: infoAccountSpace,
-                            programId: swap.golanaLoader.programId,
-                        })
-                    );
-                    return tx;
-                })(),
-                [creator, infoAccount],
-                { skipPreflight: true },
             );
 
             mintA = await createMint(
@@ -197,7 +175,7 @@ describe("swap", async () => {
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
                 })
-                .signers([creator, vaultA, vaultB])
+                .signers([creator, vaultA, vaultB, infoAccount])
                 .rpc({ skipPreflight: true });
 
             const _vaultA = await getAccount(provider.connection, vaultA.publicKey);

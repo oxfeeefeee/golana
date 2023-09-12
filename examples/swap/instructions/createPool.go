@@ -7,6 +7,7 @@ import (
 
 const VAULT_AUTH_PDA_SEED = "vault-auth"
 const LP_MINT_AUTH_PDA_SEED = "mint-auth"
+const INFO_ACCOUNT_SPACE = 512
 
 type poolData struct {
 	creator      PublicKey
@@ -27,7 +28,7 @@ type IxCreatePool struct {
 	tokenAVault Account `account:"mut, signer"`
 	tokenBVault Account `account:"mut, signer"`
 	// The pool account storing the pool data
-	poolInfo Account `account:"mut" data:"poolData"`
+	poolInfo Account `account:"mut, signer" data:"poolData"`
 
 	systemProgram Program
 	tokenProgram  Program
@@ -40,8 +41,10 @@ type IxCreatePool struct {
 }
 
 func (ix *IxCreatePool) Process() {
-	vaultAuthority, _ := FindProgramAddress(VAULT_AUTH_PDA_SEED, GetId())
+	// Create info account
+	AbortOnError(ix.poolInfo.Create(ix.creator, INFO_ACCOUNT_SPACE, nil))
 
+	vaultAuthority, _ := FindProgramAddress(VAULT_AUTH_PDA_SEED, GetId())
 	// Create the vaults
 	AbortOnError(token.CreateAndInitAccount(
 		ix.creator,

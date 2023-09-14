@@ -1,4 +1,7 @@
-# Programming with Golana
+---
+title: Programming with Golana
+pageTitle: Golana - Programming with Golana
+---
 
 ## Introduction
 
@@ -24,11 +27,11 @@ Within the struct, there are three categories of fields:
 
 - Accounts - The accounts that the instruction can access. These accounts are provided to the instruction by the client.
 
-- Account Data - To read or write data from any accounts, you must declare the data type here.
+- Programs - Programs are a kind of accounts, but they may not get directly referenced in your code. All the programs required by the APIs you use must be listed here. They are also provided to the instruction by the client.
 
 - Arguments - The arguments sent to the instruction by the client.
 
-These fields must be declared in the order of accounts, account data, and arguments; otherwise, the compiler will generate an error.
+These fields must be declared in the order of accounts, programs, and arguments; otherwise, the compiler will generate an error.
 
 ## Example
 
@@ -37,52 +40,64 @@ Let's take a look at the greeting (aka "hello world") example, which is included
 Here is the code of `IxInit`:
 
 ```go
+// This is the definition of the IxInit Instruction
 type IxInit struct {
-    // First, list all the accounts that are used by the instruction
-    // Use tags to specify the account attributes:
-    // - `golana:"signer"` for the accounts that are used as signer
-    // - `golana:"mut"` for the accounts that are used as writable
-    user        *AccountInfo `golana:"signer"`
-    userAccount *AccountInfo `golana:"mut"`
+	// First, list all the accounts that are used by the instruction
+	// Use tags to specify the account attributes:
+	// - `account:"signer"` for the accounts that are used as signer
+	// - `account:"mut"` for the accounts that are used as writable
+	// - `account:"mut, signer` for the accounts that are used as signer and writable
+	// If you need to access the account data, add the `data:"accountData"` tag to the field
+	// where `accountData` is a type name you defined in this package
 
-    // Second, declare the data stored in the accounts, that needs to be read or written by the instruction
-    // Use the corresponding account name with a _data suffix,
-    // and add the `golana:"init"` or `golana:"mut"` tag to the field:
-    // - `golana:"init"` for the data that will be initialized by the instruction
-    // - `golana:"mut"` for the data that will be written by the instruction
-    userAccount_data *UserData `golana:"init"`
+	// The user's "main" account
+	user Account `account:"mut, signer"`
+	// The account to be created to store the user's data on chain
+	userAccount Account `account:"mut, signer" data:"userData"`
 
-    // Finally, list all the instruction parameters
-    initialCount uint64
+	// Then, list all the programs that are used by the instruction
+	// programs are a kind of accounts, but they may not get directly referenced in
+	// your code. All the programs required by the APIs you use must be listed here.
+	// The system program account is used to create the userAccount
+	systemProgram Program
+
+	// Finally, list all the instruction parameters
+	// Set the initialCount of the greet greater than 0 to cheat
+	initialCount uint64
 }
 
-type UserData struct {
-    auth       PublicKey
-    greetCount uint64
+type userData struct {
+	// Save the Pubkey of the user, so that it won't greet to other users
+	auth PublicKey
+	// How many times the user has been greeted
+	greetCount uint64
 }
 
 // This is the business logic of the IxInit
 func (ix *IxInit) Process() {
-    data := new(UserData)
-    // set the auth of userAccount as the user
-    data.auth = *ix.user.Key
-    data.greetCount = ix.initialCount
-    ix.userAccount_data = data
-    CommitData(ix.userAccount)
+	// On the client side, the userAccount is just a newly generated keypair
+	// we now initialize it on chain
+	ix.userAccount.Create(ix.user, 512, nil)
+
+	data := new(userData)
+	// set the auth of userAccount as the user
+	data.auth = *ix.user.Key()
+	data.greetCount = ix.initialCount
+	ix.userAccount.SaveData(data)
 }
 ```
 
-There should be enough comments in the code to explain what's going on. One thing worth noting is that the CommitData() function, which is different from other frameworks. With other frameworks, the data is written back to the account implicitly. With Golana, you need to call CommitData() explicitly. This is because Golana runs on the Goscript VM, there is another layer of abstraction.
+There should be enough comments in the code to explain what's going on. One thing worth noting is that the SaveData() function, which is different from other frameworks. With other frameworks, the data is written back to the account implicitly. With Golana, you need to call SaveData() explicitly. This is because Golana runs on the Goscript VM, there is another layer of abstraction.
 
 We'll not go through the code of `IxGreet` here, for it's very similar to `IxInit` and should be self-explanatory.
 
 ## The solana module
 
-Every Golana program needs to import the `solana` module, which provides the interfaces to interact with the Solana runtime. The Go part of the code is here: [solana](https://github.com/oxfeeefeee/golana/tree/main/go/solana), and the Rust part is here: [solana.rs](https://github.com/oxfeeefeee/golana/blob/main/loader/programs/loader/src/ffi/solana.rs), in case you what to take a look at the implementation.
+Every Golana program needs to import the `solana` module, which provides the interfaces to interact with the Solana runtime. The Go part of the code is here: [solana](https://github.com/oxfeeefeee/golana/tree/main/cli/go/solana), and the Rust part is here: [solana.rs](https://github.com/oxfeeefeee/golana/blob/main/loader/programs/loader/src/ffi/solana.rs), in case you what to take a look at the implementation.
 
 ## The compiler
 
-When you execute `golana-cli build`, it performs three tasks:
+When you execute `golana build`, it performs three tasks:
 
 - Compiles the Go code into Goscript Bytecode.
 

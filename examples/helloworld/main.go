@@ -21,7 +21,7 @@ type IxInit struct {
 	userAccount Account `account:"mut, signer" data:"userData"`
 
 	// Then, list all the programs that are used by the instruction
-	// programs are a kind of accounts, but they usually don't get directly referenced in
+	// programs are a kind of accounts, but they may not get directly referenced in
 	// your code. All the programs required by the APIs you use must be listed here.
 	// The system program account is used to create the userAccount
 	systemProgram Program
@@ -60,8 +60,7 @@ type IxGreet struct {
 	arrayTest [3]int64
 
 	buffer []byte
-
-	pk PublicKey
+	pk     PublicKey
 }
 
 func (ix *IxGreet) Process() {
